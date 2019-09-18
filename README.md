@@ -2,9 +2,9 @@
 
 Man I hope this doesn't become deprecated lmao.
 
-Anyway this is supposed to be some sort of outlet for symbolic differentiation, with the user of MathQuill, the same thing [Desmos](http://desmos.com) uses.
+Anyway this is supposed to be some sort of outlet for symbolic differentiation, with the use of MathQuill, the same thing [Desmos](http://desmos.com) uses.
 
-## Run 
+## Run
 
 This is created using create-elm-app: make sure you have Node, elm and that installed on your computer.
 
