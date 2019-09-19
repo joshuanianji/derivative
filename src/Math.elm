@@ -275,7 +275,7 @@ simplify expr1 =
                 simplify a
 
             else if n == 0 then
-                Ok <| Debug.log "Zero!" Const 0
+                Ok <| Const 0
 
             else
                 Result.map2 Mult (Ok <| Const n) (simplify a)
@@ -449,13 +449,13 @@ asLatex expr =
                     "\\left(" ++ asLatex a ++ "\\right)" ++ "\\cdot" ++ "\\left(" ++ asLatex b ++ "\\right)"
 
                 ( True, _ ) ->
-                    "\\left(" ++ asLatex a ++ "\\right)" ++ "\\cdot" ++ asLatex b
+                    "\\left(" ++ asLatex a ++ "\\right)" ++ "\\cdot " ++ asLatex b
 
                 ( _, True ) ->
                     asLatex a ++ "\\cdot" ++ "\\left(" ++ asLatex b ++ "\\right)"
 
                 _ ->
-                    asLatex a ++ "\\cdot" ++ asLatex b
+                    asLatex a ++ "\\cdot " ++ asLatex b
 
         Div a b ->
             "\\frac{" ++ asLatex a ++ "}{" ++ asLatex b ++ "}"
@@ -601,7 +601,7 @@ parser =
 
 
 
--- order matters here, since the parser goes down the list! BEDMAS but going up (highest precedence at bottom)
+-- Thanks to the Pratt Parser for existing!
 
 
 expression : Parser Expr
@@ -609,9 +609,9 @@ expression =
     Pratt.expression
         { oneOf =
             [ negationCheck
-            , Pratt.prefix 5 cosine Cos
-            , Pratt.prefix 5 sine Sin
-            , Pratt.prefix 5 natLog Ln
+            , Pratt.prefix 2 cosine Cos
+            , Pratt.prefix 2 sine Sin
+            , Pratt.prefix 2 natLog Ln
             , sqrt
             , division
             , parentheses
@@ -626,11 +626,11 @@ expression =
         , andThenOneOf =
             [ Pratt.infixLeft 1 (Parser.symbol "+") Add
             , Pratt.infixLeft 1 (Parser.symbol "-") Sub
-            , Pratt.infixLeft 2 (Parser.symbol "\\cdot") Mult
-            , Pratt.infixRight 4 (Parser.symbol "^") Pow
+            , Pratt.infixLeft 3 (Parser.symbol "\\cdot") Mult
+            , Pratt.infixRight 5 (Parser.symbol "^") Pow
 
             -- allows parsing of expressions like 3x
-            , Pratt.infixLeft 2 (Parser.symbol "") Mult
+            , Pratt.infixLeft 3 (Parser.symbol "") Mult
             ]
         , spaces = Parser.succeed ()
         }
@@ -667,7 +667,7 @@ natLog =
 
 
 
--- because squrt is not a simple prefix operation (it has braces) we need to use more stuff
+-- because sqrt is not a simple prefix operation (it has braces) we need to use more stuff
 
 
 sqrt : Pratt.Config Expr -> Parser Expr
