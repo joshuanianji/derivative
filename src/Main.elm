@@ -8,6 +8,8 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
+import Json.Decode
+import Json.Encode
 import Math exposing (Expr(..), MathError(..))
 import Ports
 
@@ -58,7 +60,7 @@ view model =
             [ Font.size 32
             , Font.center
             ]
-            [ Element.text "Differentials?" ]
+            [ Element.text "Derivative?" ]
         , input model
         , latex model
         , latexToExpr model
@@ -208,14 +210,11 @@ derivative model =
                        )
                     |> List.singleton
                 )
-            , Element.paragraph
-                [ Font.center ]
-                (model.derivative
-                    |> Result.map Math.asLatex
-                    |> Result.withDefault "Errors lol"
-                    |> Element.text
-                    |> List.singleton
-                )
+            , model.derivative
+                |> Result.map (Math.asLatex >> staticMath)
+                -- |> Result.map (Math.asLatex >> Element.text)
+                |> Result.withDefault (Element.text "Errors lol")
+                |> Element.el [ centerX ]
             ]
         ]
 
@@ -223,14 +222,30 @@ derivative model =
 inputMath : Model -> Element Msg
 inputMath model =
     Html.div []
-        [ Html.span
-            [ Html.Attributes.id "static-math" ]
-            [ Html.text "f(x)=" ]
+        [ Html.node "mathquill-static"
+            [ Html.Attributes.property "latexValue" <|
+                Json.Encode.string "f(x)="
+            ]
+            []
         , Html.span
             [ Html.Attributes.id "math-test" ]
             -- I cannot use [Html.text model.latexStr] here!
             [ Html.text "" ]
         ]
+        |> Element.html
+
+
+
+-- Mathquill static math using Web Components
+
+
+staticMath : String -> Element Msg
+staticMath latexStr =
+    Html.node "mathquill-static"
+        [ Html.Attributes.property "latexValue" <|
+            Json.Encode.string latexStr
+        ]
+        []
         |> Element.html
 
 

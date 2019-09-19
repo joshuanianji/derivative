@@ -1,21 +1,14 @@
 import { Elm } from './Main.elm';
 import * as serviceWorker from './serviceWorker';
-import Test from './components/test';
+import StaticMath from './components/StaticMath';
 
-window.customElements.define('mathquill-test', Test);
+window.customElements.define('mathquill-static', StaticMath);
 
 var app = Elm.Main.init({
     node: document.getElementById('root')
 });
 
 var MQ = MathQuill.getInterface(2);
-
-var staticMaths = document.querySelectorAll('#static-math')
-staticMaths.forEach(function (node) {
-    console.log("Static Math initialized")
-    MQ.StaticMath(node);
-})
-
 
 var answerSpan = document.querySelector('#math-test');
 var mathField = MQ.MathField(answerSpan, {
