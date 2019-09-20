@@ -733,8 +733,9 @@ variable =
                     |. Parser.oneOf
                         [ Parser.chompIf (\c -> c == '_')
                             |. Parser.oneOf
-                                [ Parser.symbol "{"
-                                    |. Parser.chompUntil "}"
+                                [ Parser.chompIf (\c -> c == '{')
+                                    |. Parser.chompWhile (\c -> not (c == '}'))
+                                    |. Parser.chompIf (\c -> c == '}')
                                 , Parser.chompIf Char.isAlphaNum
                                 ]
                         , Parser.succeed ()
