@@ -23,8 +23,12 @@ type Expr
     | Div Expr Expr
     | Mult Expr Expr
     | Pow Expr Expr
-    | Cos Expr
     | Sin Expr
+    | Csc Expr
+    | Cos Expr
+    | Sec Expr
+    | Tan Expr
+    | Cot Expr
     | Ln Expr
     | Sqrt Expr
 
@@ -120,12 +124,34 @@ derivativeIter expr =
                     (Result.map2 Mult (derivativeIter f) (Ok <| Div g f))
                 )
 
-        -- Trig
+        -- Trig - a lot of chain rules are used
         Sin f ->
             Result.map2 Mult (derivativeIter f) (Ok <| Cos f)
 
+        Csc f ->
+            Result.map2 Mult
+                (Result.map negate <| derivativeIter f)
+            <|
+                Ok <|
+                    Mult (Csc f) (Cot f)
+
         Cos f ->
-            Result.map2 Mult (derivativeIter f) (Ok <| Mult (Const -1) (Sin f))
+            Result.map2 Mult (derivativeIter f) (Ok <| negate (Sin f))
+
+        Sec f ->
+            Result.map2 Mult (derivativeIter f) <|
+                Ok <|
+                    Mult (Sec f) (Tan f)
+
+        Tan f ->
+            Result.map2 Mult (derivativeIter f) <|
+                Ok <|
+                    Mult (Sec f) (Sec f)
+
+        Cot f ->
+            Result.map2 Mult (derivativeIter f) <|
+                Ok <|
+                    Mult (Csc f) (Csc f)
 
         -- Logarithm
         Ln f ->
@@ -404,8 +430,20 @@ simplify expr1 =
         Sin a ->
             Result.map Sin (simplify a)
 
+        Csc a ->
+            Result.map Csc (simplify a)
+
         Cos a ->
             Result.map Cos (simplify a)
+
+        Sec a ->
+            Result.map Cos (simplify a)
+
+        Tan a ->
+            Result.map Tan (simplify a)
+
+        Cot a ->
+            Result.map Cot (simplify a)
 
         Ln (Var "e") ->
             Ok <| Const 1
@@ -478,8 +516,20 @@ asLatex expr =
         Sin a ->
             "\\sin\\left(" ++ asLatex a ++ "\\right)"
 
+        Csc a ->
+            "\\csc\\left(" ++ asLatex a ++ "\\right)"
+
         Cos a ->
             "\\cos\\left(" ++ asLatex a ++ "\\right)"
+
+        Sec a ->
+            "\\sec\\lect(" ++ asLatex a ++ "\\right)"
+
+        Tan a ->
+            "\\tan\\lect(" ++ asLatex a ++ "\\right)"
+
+        Cot a ->
+            "\\cot\\lect(" ++ asLatex a ++ "\\right)"
 
         Ln a ->
             "\\ln\\left(" ++ asLatex a ++ "\\right)"
