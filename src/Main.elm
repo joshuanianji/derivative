@@ -76,7 +76,7 @@ input model =
         , spacing 32
         , centerX
         ]
-        [ Element.el [ Element.spacing 16, centerX ] <| inputMath model
+        [ Element.el [ Element.spacing 16, centerX ] <| functionInput model
         , Element.row
             [ spacing 32
             , centerX
@@ -180,6 +180,7 @@ derivative model =
         , Border.width 1
         , Border.color <| Element.rgb 0 0 0
         , Element.padding 16
+        , width fill
         ]
         [ Element.paragraph
             [ Font.size 32
@@ -187,7 +188,9 @@ derivative model =
             ]
             [ Element.text "Derivative" ]
         , Element.column
-            [ centerX ]
+            [ centerX
+            , width fill
+            ]
             [ Element.paragraph
                 [ Font.center ]
                 (model.derivative
@@ -211,16 +214,20 @@ derivative model =
                     |> List.singleton
                 )
             , model.derivative
-                |> Result.map (Math.asLatex >> staticMath)
+                |> Result.map (Math.asLatex >> (\s -> "\\frac{df}{dx}=" ++ s) >> staticMath)
                 -- |> Result.map (Math.asLatex >> Element.text)
                 |> Result.withDefault (Element.text "Errors lol")
-                |> Element.el [ centerX ]
+                |> Element.el
+                    [ centerX
+                    , Element.scrollbarX
+                    , width fill
+                    ]
             ]
         ]
 
 
-inputMath : Model -> Element Msg
-inputMath model =
+functionInput : Model -> Element Msg
+functionInput model =
     Html.div []
         [ Html.node "mathquill-static"
             [ Html.Attributes.property "latexValue" <|
@@ -242,6 +249,20 @@ inputMath model =
 staticMath : String -> Element Msg
 staticMath latexStr =
     Html.node "mathquill-static"
+        [ Html.Attributes.property "latexValue" <|
+            Json.Encode.string latexStr
+        ]
+        []
+        |> Element.html
+
+
+
+-- Mathquill input math using Web Components
+
+
+inputMath : String -> Element Msg
+inputMath latexStr =
+    Html.node "mathquill-input"
         [ Html.Attributes.property "latexValue" <|
             Json.Encode.string latexStr
         ]
