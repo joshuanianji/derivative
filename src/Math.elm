@@ -392,6 +392,9 @@ simplify expr1 =
             else if n == 0 then
                 Ok <| Const 1
 
+            else if n < 0 then
+                Result.map (Div <| Const 1) (Ok <| Pow a (Const -n))
+
             else
                 Result.map2 Pow (simplify a) (Ok <| Const n)
 
@@ -478,7 +481,11 @@ asLatex expr =
             String.fromFloat a ++ "\\cdot" ++ String.fromFloat a
 
         Mult (Const a) b ->
-            String.fromFloat a ++ asLatex b
+            if a == -1 then
+                "-" ++ asLatex b
+
+            else
+                String.fromFloat a ++ asLatex b
 
         -- Mult (Add a b) (Sub b c) should have parentheses around them. This checks for all cases.
         Mult a b ->
@@ -798,15 +805,26 @@ variable =
             ]
 
 
+
+-- Custom parser to only parser numbers!!
+-- the elm Parser.number also parses "e" as the exponent which messes things suck as 3e^{5x} up a lot, and it's annoying/
+-- Good thing we have Functional Programming, and good thing the Elm Parser is so flexible!
+
+
 constant : Parser Expr
 constant =
-    Parser.number
-        { int = Just (toFloat >> Const)
-        , hex = Nothing
-        , octal = Nothing
-        , binary = Nothing
-        , float = Just Const
-        }
+    Parser.getChompedString (Parser.chompWhile (\c -> Char.isDigit c || c == '.'))
+        |> Parser.map String.toFloat
+        |> Parser.andThen
+            (\num ->
+                case num of
+                    Just n ->
+                        Parser.succeed n
+
+                    Nothing ->
+                        Parser.problem "number failed"
+            )
+        |> Parser.map Const
 
 
 powArgument : Pratt.Config Expr -> Parser Expr

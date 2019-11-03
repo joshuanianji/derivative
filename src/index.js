@@ -1,10 +1,10 @@
 import { Elm } from './Main.elm';
 import * as serviceWorker from './serviceWorker';
 import StaticMath from './components/StaticMath';
-import InputMath from './components/InputMath'
+// import InputMath from './components/InputMath'
 
 window.customElements.define('mathquill-static', StaticMath);
-window.customElements.define('mathquill-input', InputMath);
+// window.customElements.define('mathquill-input', InputMath);
 
 var app = Elm.Main.init({
     node: document.getElementById('root')
