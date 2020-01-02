@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Element exposing (Element, centerX, fill, height, spacing, width)
+import Element exposing (Element, centerX, fill, height, padding, px, spacing, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -36,8 +36,8 @@ type alias Model =
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { latexStr = ""
-      , expr = Err <| ParserError [ "No Expression provided" ]
-      , derivative = Err <| ParserError [ "No Expression provided" ]
+      , expr = Math.initExpr
+      , derivative = Math.initExpr
       }
     , Cmd.none
     )
@@ -53,25 +53,51 @@ view model =
         [ width fill
         , height fill
         , Element.spacing 32
+        , Element.paddingXY 50 70
         ]
         [ Element.paragraph
             [ Font.size 32
             , Font.center
             ]
-            [ Element.text "Derivative?" ]
+            [ Element.text "Derivative Calculator with Latex" ]
+        , heading 1 "Derivative Input"
         , input model
-        , latex model
-        , latexToExpr model
+        , heading 2 "Derivative"
         , derivative model
         ]
-        |> Element.layout []
+        |> (\el ->
+                Element.row
+                    [ width fill, height fill ]
+                    [ Element.el [ width <| Element.fillPortion 1, height fill ] Element.none
+                    , Element.el [ width <| Element.fillPortion 4, height fill ] el
+                    , Element.el [ width <| Element.fillPortion 1, height fill ] Element.none
+                    ]
+           )
+        |> Element.layout
+            [ Font.family
+                [ Font.typeface "Computer Modern" ]
+            ]
+
+
+heading : Int -> String -> Element Msg
+heading num str =
+    Element.paragraph
+        [ width fill
+        , Font.bold
+        , Font.size 30
+        , Element.paddingXY 0 36
+        ]
+        [ Element.text <| String.fromInt num
+
+        -- use padding to simulate tab
+        , Element.el [ Element.paddingXY 30 0 ] <| Element.text str
+        ]
 
 
 input : Model -> Element Msg
 input model =
     Element.column
-        [ Element.padding 24
-        , spacing 32
+        [ spacing 32
         , centerX
         ]
         [ Element.el [ Element.spacing 16, centerX ] <| functionInput model
@@ -128,7 +154,7 @@ latexToExpr model =
             , spacing 16
             , Element.padding 16
             ]
-            [ Element.text "Latex -> Expr" ]
+            [ Element.text "Latex → Expr" ]
         , case model.expr of
             Ok expr ->
                 Element.paragraph
@@ -172,56 +198,26 @@ latexToExpr model =
 
 derivative : Model -> Element Msg
 derivative model =
-    Element.column
-        [ centerX
-        , spacing 16
-        , Border.width 1
-        , Border.color <| Element.rgb 0 0 0
-        , Element.padding 16
-        , width fill
-        ]
-        [ Element.paragraph
-            [ Font.size 32
-            , Font.center
-            ]
-            [ Element.text "Derivative" ]
-        , Element.column
+    (case model.derivative of
+        Ok der ->
+            Math.asLatex der
+                |> (\s -> "\\frac{df}{dx}=" ++ s)
+                |> staticMath
+
+        Err mathError ->
+            Math.errorToString mathError
+                |> Element.text
+    )
+        |> Element.el
             [ centerX
+            , Element.scrollbarX
+            ]
+        |> Element.el
+            [ centerX
+            , spacing 16
+            , Element.padding 16
             , width fill
             ]
-            [ Element.paragraph
-                [ Font.center ]
-                (model.derivative
-                    |> (\r ->
-                            case r of
-                                Ok der ->
-                                    Element.text <| Debug.toString der
-
-                                Err DivisionByZero ->
-                                    Element.text "Division by zero lol"
-
-                                Err (ExtraVariable str) ->
-                                    Element.text <| "Extra variable " ++ str
-
-                                Err (ParserError errors) ->
-                                    Element.text "Parser errors lol"
-
-                                Err (DerivativeError error) ->
-                                    Element.text <| "derivative error! " ++ error
-                       )
-                    |> List.singleton
-                )
-            , model.derivative
-                |> Result.map (Math.asLatex >> (\s -> "\\frac{df}{dx}=" ++ s) >> staticMath)
-                -- |> Result.map (Math.asLatex >> Element.text)
-                |> Result.withDefault (Element.text "Errors lol")
-                |> Element.el
-                    [ centerX
-                    , Element.scrollbarX
-                    , width fill
-                    ]
-            ]
-        ]
 
 
 functionInput : Model -> Element Msg
@@ -287,8 +283,8 @@ update msg model =
         Clear ->
             ( { model
                 | latexStr = ""
-                , expr = Err <| ParserError [ "No Expression provided" ]
-                , derivative = Err <| ParserError [ "No Expression provided" ]
+                , expr = Math.initExpr
+                , derivative = Math.initExpr
               }
             , Ports.clear ()
             )
