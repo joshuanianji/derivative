@@ -16,10 +16,10 @@ Special thanks to:
 
 - [Desmos](http://desmos.com), for being such a great graphing calculator.
 
-- [MathQuill](http://mathquill.com/), for making it so easy to with with LaTeX inputs.
+- [MathQuill](http://mathquill.com/), for making it so easy manage LaTeX input and output.
 
 - [Create Elm App](https://github.com/halfzebra/create-elm-app), with which this project is bootstrapped.
 
-- [Dmy](https://github.com/dmy) for creating the beautiful [Elm Pratt Parser](https://github.com/dmy/elm-pratt-parser) - this wouldn't be possible without this package.
+- [Dmy](https://github.com/dmy) for creating the beautiful [Elm Pratt Parser](https://github.com/dmy/elm-pratt-parser) - this project wouldn't be possible without this package.
 
 - [The Elm Language](https://elm-lang.org/), for being so easy to work with.
