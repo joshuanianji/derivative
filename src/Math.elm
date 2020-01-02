@@ -530,13 +530,13 @@ asLatex expr =
             "\\cos\\left(" ++ asLatex a ++ "\\right)"
 
         Sec a ->
-            "\\sec\\lect(" ++ asLatex a ++ "\\right)"
+            "\\sec\\left(" ++ asLatex a ++ "\\right)"
 
         Tan a ->
-            "\\tan\\lect(" ++ asLatex a ++ "\\right)"
+            "\\tan\\left(" ++ asLatex a ++ "\\right)"
 
         Cot a ->
-            "\\cot\\lect(" ++ asLatex a ++ "\\right)"
+            "\\cot\\left(" ++ asLatex a ++ "\\right)"
 
         Ln a ->
             "\\ln\\left(" ++ asLatex a ++ "\\right)"
@@ -668,6 +668,10 @@ expression =
             [ negationCheck
             , Pratt.prefix 2 cosine Cos
             , Pratt.prefix 2 sine Sin
+            , Pratt.prefix 2 cosecant Csc
+            , Pratt.prefix 2 secant Sec
+            , Pratt.prefix 2 tangent Tan
+            , Pratt.prefix 2 cotangent Cot
             , Pratt.prefix 2 natLog Ln
             , sqrt
             , division
@@ -702,24 +706,59 @@ negationCheck =
     Pratt.prefix 3 (Parser.symbol "-") negate
 
 
-cosine : Parser ()
-cosine =
-    Parser.succeed ()
-        |. Parser.keyword "\\cos"
-        |. Parser.spaces
+{-| Trigonometry functions
 
+Sin
+Cos
+Csc
+Sec
+Tan
+Cot
 
+-}
 sine : Parser ()
 sine =
-    Parser.succeed ()
-        |. Parser.keyword "\\sin"
-        |. Parser.spaces
+    unary "\\sin"
+
+
+cosine : Parser ()
+cosine =
+    unary "\\cos"
+
+
+cosecant : Parser ()
+cosecant =
+    unary "\\csc"
+
+
+secant : Parser ()
+secant =
+    unary "\\sec"
+
+
+tangent : Parser ()
+tangent =
+    unary "\\tan"
+
+
+cotangent : Parser ()
+cotangent =
+    unary "\\cot"
 
 
 natLog : Parser ()
 natLog =
+    unary "\\ln"
+
+
+
+-- helper function for unary operations
+
+
+unary : String -> Parser ()
+unary keyword =
     Parser.succeed ()
-        |. Parser.keyword "\\ln"
+        |. Parser.keyword keyword
         |. Parser.spaces
 
 
