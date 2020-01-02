@@ -1,0 +1,8 @@
+/* so this file exists just to import a font lol. Would it be easier to use javascript instead?
+Literally every internet source tells me to use css's @font-face so... */
+
+
+@font-face{
+    font-family: Computer Modern;
+    src: url('fonts/cmunrm.ttf')
+}
