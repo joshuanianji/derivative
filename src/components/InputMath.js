@@ -21,12 +21,16 @@ class InputMath extends HTMLElement {
 
     connectedCallback() {
 
+        // styles are found in main.css
+        // I know this breaks the encapsulations and whatnot but shh
         this.innerHTML = `<span id='function-input'></span>`
 
         var mathField = MQ.MathField(this.querySelector("span"), {
             // don't need backslash for words like pi, sqrt, sin, etc.
-            autoCommands: 'pi sqrt degree',
+            autoCommands: 'pi sqrt theta phi',
             autoOperatorNames: 'sin cos tan csc sec cot ln arcsin arccos arctan arccsc arcsec arccot',
+            restrictMismatchedBrackets: true,
+            supSubsRequireOperand: true,
             handlers: {
                 edit: function () { // useful event handlers
                     console.log(mathField.latex())
