@@ -15,7 +15,9 @@ import Set
 -- TYPES
 
 
-type Expr
+type
+    Expr
+    -- Trivial functions
     = Const Float
     | Var String
     | Add Expr Expr
@@ -23,16 +25,34 @@ type Expr
     | Div Expr Expr
     | Mult Expr Expr
     | Pow Expr Expr
+      -- Trig
     | Sin Expr
     | Csc Expr
     | Cos Expr
     | Sec Expr
     | Tan Expr
     | Cot Expr
+      -- other
     | Ln Expr
     | Sqrt Expr
 
 
+{-| Not ready yet - I need the absolute value funcion for the derivative of Arccsc and I don't want to do that yet lol.
+-- Inverse trig
+| Arcsin Expr
+| Arccsc Expr
+| Arccos Expr
+| Arcsec Expr
+| Arctan Expr
+| Arccot Expr
+-- Hyperbolic
+| Sinh Expr
+| Csch Expr
+| Cosh Expr
+| Sech Expr
+| Tanh Expr
+| Coth Expr
+-}
 type MathError
     = DivisionByZero
     | ExtraVariable String
@@ -73,95 +93,88 @@ negate expr =
 derivative : Result MathError Expr -> Result MathError Expr
 derivative =
     fullSimplify
-        >> Result.andThen derivativeIter
+        >> Result.map derivativeIter
         >> fullSimplify
 
 
-derivativeIter : Expr -> Result MathError Expr
+derivativeIter : Expr -> Expr
 derivativeIter expr =
     case expr of
         Const _ ->
-            Ok <| Const 0
+            Const 0
 
         Var "x" ->
-            Ok <| Const 1
+            Const 1
 
         Var _ ->
-            Ok <| Const 0
+            Const 0
 
         Add a b ->
-            Result.map2 Add (derivativeIter a) (derivativeIter b)
+            Add (derivativeIter a) (derivativeIter b)
 
         Sub a b ->
-            Result.map2 Sub (derivativeIter a) (derivativeIter b)
+            Sub (derivativeIter a) (derivativeIter b)
 
         Mult a b ->
-            Result.map2 Add (Result.map2 Mult (derivativeIter a) (Ok b)) (Result.map2 Mult (Ok a) (derivativeIter b))
+            Add (Mult (derivativeIter a) b) (Mult a (derivativeIter b))
 
         Div a b ->
-            Result.map2 Div
-                (Result.map2 Sub (Result.map2 Mult (derivativeIter a) (Ok b)) (Result.map2 Mult (Ok a) (derivativeIter b)))
-                (Ok <| Mult b b)
+            Div
+                (Sub (Mult (derivativeIter a) b) (Mult a (derivativeIter b)))
+                (Mult b b)
 
         Pow (Var "x") (Const b) ->
-            Result.map2 Mult (Ok <| Const b) (Ok <| Pow (Var "x") (Const (b - 1)))
+            Mult (Const b) (Pow (Var "x") (Const (b - 1)))
 
         Pow (Var "e") f ->
-            Result.map2 Mult (derivativeIter f) (Ok <| Pow (Var "e") f)
+            Mult (derivativeIter f) (Pow (Var "e") f)
 
         -- (d/dx) f(x)^n = f'(x) * n * f(x) ^ (n-1)
         Pow a (Const n) ->
-            Result.map2 Mult
-                (derivativeIter a)
-                (Result.map2 Mult (Ok <| Const n) (Ok <| Pow a (Const <| n - 1)))
+            Mult (derivativeIter a) (Mult (Const n) (Pow a (Const <| n - 1)))
 
         -- LOL I JUST USED THIS (https://mathvault.ca/exponent-rule-derivative/#Example_1_pix)
         Pow f g ->
-            Result.map2 Mult
-                (Ok <| Pow f g)
-                (Result.map2 Add
-                    (Result.map2 Mult (derivativeIter g) (Ok <| Ln f))
-                    (Result.map2 Mult (derivativeIter f) (Ok <| Div g f))
+            Mult
+                (Pow f g)
+                (Add
+                    (Mult (derivativeIter g) (Ln f))
+                    (Mult (derivativeIter f) (Div g f))
                 )
 
         -- Trig - a lot of chain rules are used
         Sin f ->
-            Result.map2 Mult (derivativeIter f) (Ok <| Cos f)
+            Mult (derivativeIter f) (Cos f)
 
         Csc f ->
-            Result.map2 Mult
-                (Result.map negate <| derivativeIter f)
-            <|
-                Ok <|
-                    Mult (Csc f) (Cot f)
+            Mult (negate <| derivativeIter f) <|
+                Mult (Csc f) (Cot f)
 
         Cos f ->
-            Result.map2 Mult (derivativeIter f) (Ok <| negate (Sin f))
+            Mult (derivativeIter f) <|
+                negate (Sin f)
 
         Sec f ->
-            Result.map2 Mult (derivativeIter f) <|
-                Ok <|
-                    Mult (Sec f) (Tan f)
+            Mult (derivativeIter f) <|
+                Mult (Sec f) (Tan f)
 
         Tan f ->
-            Result.map2 Mult (derivativeIter f) <|
-                Ok <|
-                    Mult (Sec f) (Sec f)
+            Mult (derivativeIter f) <|
+                Mult (Sec f) (Sec f)
 
         Cot f ->
-            Result.map2 Mult (derivativeIter f) <|
-                Ok <|
-                    Mult (Csc f) (Csc f)
+            Mult (derivativeIter f) <|
+                Mult (Csc f) (Csc f)
 
         -- Logarithm
         Ln f ->
-            Result.map2 Div (derivativeIter f) (Ok f)
+            Div (derivativeIter f) f
 
         -- Square Root
         Sqrt f ->
-            Result.map2 Mult
+            Mult
                 (derivativeIter f)
-                (Ok <| Mult (Div (Const 1) (Const 2)) (Pow f (negate <| Div (Const 1) (Const 2))))
+                (Mult (Div (Const 1) (Const 2)) (Pow f (negate <| Div (Const 1) (Const 2))))
 
 
 
