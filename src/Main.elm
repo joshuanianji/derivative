@@ -227,7 +227,7 @@ derivative model =
 
 
 functionInput : Model -> Element Msg
-functionInput model =
+functionInput _ =
     Html.div []
         [ Html.node "mathquill-static"
             [ Html.Attributes.property "latexValue" <|
@@ -235,9 +235,11 @@ functionInput model =
             ]
             []
         , Html.span
-            [ Html.Attributes.id "math-test" ]
-            -- I cannot use [Html.text model.latexStr] here!
-            [ Html.text "" ]
+            [ Html.Attributes.style "display" "inline-block"
+            , Html.Attributes.style "height" "shrink"
+            , Html.Attributes.style "width" "shrink"
+            ]
+            [ Html.node "mathquill-input" [] [] ]
         ]
         |> Element.html
 
@@ -249,20 +251,6 @@ functionInput model =
 staticMath : String -> Element Msg
 staticMath latexStr =
     Html.node "mathquill-static"
-        [ Html.Attributes.property "latexValue" <|
-            Json.Encode.string latexStr
-        ]
-        []
-        |> Element.html
-
-
-
--- Mathquill input math using Web Components
-
-
-inputMath : String -> Element Msg
-inputMath latexStr =
-    Html.node "mathquill-input"
         [ Html.Attributes.property "latexValue" <|
             Json.Encode.string latexStr
         ]
@@ -304,7 +292,7 @@ update msg model =
                 , expr = Err <| ParserError [ "No Expression provided" ]
                 , derivative = Err <| ParserError [ "No Expression provided" ]
               }
-            , Cmd.none
+            , Ports.clear ()
             )
 
 
@@ -313,5 +301,5 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Ports.changedLatex ChangedLatexStr
