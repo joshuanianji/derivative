@@ -440,7 +440,7 @@ simplify expr1 =
             Result.map Cos (simplify a)
 
         Sec a ->
-            Result.map Cos (simplify a)
+            Result.map Sec (simplify a)
 
         Tan a ->
             Result.map Tan (simplify a)
@@ -507,42 +507,106 @@ asLatex expr =
 
         -- only need to take care of the parentheses around the base.
         Pow a b ->
-            case ( shouldHaveParentheses (Pow a b) a, shouldHaveBraces b ) of
-                ( True, True ) ->
-                    "\\left(" ++ asLatex a ++ "\\right)" ++ "^{" ++ asLatex b ++ "}"
+            let
+                displayb =
+                    if shouldHaveBraces b then
+                        "^{" ++ asLatex b ++ "}"
 
-                ( True, _ ) ->
-                    "\\left(" ++ asLatex a ++ "\\right)" ++ "^" ++ asLatex b
+                    else
+                        "^" ++ asLatex b
+            in
+            if isTrig a then
+                -- if it's a trig functino then we put the power in between the operator and the content
+                trigPower a displayb
 
-                ( _, True ) ->
-                    asLatex a ++ "^{" ++ asLatex b ++ "}"
+            else if shouldHaveParentheses (Pow a b) a then
+                -- else we jsut do the regular stuff
+                "\\left(" ++ asLatex a ++ "\\right)" ++ displayb
 
-                _ ->
-                    asLatex a ++ "^" ++ asLatex b
-
-        Sin a ->
-            "\\sin\\left(" ++ asLatex a ++ "\\right)"
-
-        Csc a ->
-            "\\csc\\left(" ++ asLatex a ++ "\\right)"
-
-        Cos a ->
-            "\\cos\\left(" ++ asLatex a ++ "\\right)"
-
-        Sec a ->
-            "\\sec\\left(" ++ asLatex a ++ "\\right)"
-
-        Tan a ->
-            "\\tan\\left(" ++ asLatex a ++ "\\right)"
-
-        Cot a ->
-            "\\cot\\left(" ++ asLatex a ++ "\\right)"
+            else
+                asLatex a ++ displayb
 
         Ln a ->
             "\\ln\\left(" ++ asLatex a ++ "\\right)"
 
         Sqrt f ->
             "\\sqrt{" ++ asLatex f ++ "}"
+
+        trig ->
+            trigToString trig
+                |> (\( operator, content ) -> operator ++ content)
+
+
+
+-- helper functions for asLatex. Mainly trig stuff lol
+-- isTrig is useful because power functions are represented differently when it's a trig function
+
+
+isTrig : Expr -> Bool
+isTrig a =
+    case a of
+        Sin _ ->
+            True
+
+        Csc _ ->
+            True
+
+        Cos _ ->
+            True
+
+        Sec _ ->
+            True
+
+        Tan _ ->
+            True
+
+        Cot _ ->
+            True
+
+        _ ->
+            False
+
+
+
+-- displays exponents when it's a trig function
+
+
+trigPower : Expr -> String -> String
+trigPower trig power =
+    let
+        ( operator, content ) =
+            trigToString trig
+    in
+    operator ++ power ++ content
+
+
+trigToString : Expr -> ( String, String )
+trigToString trig =
+    let
+        latexA a =
+            "\\left(" ++ asLatex a ++ "\\right)"
+    in
+    case trig of
+        Sin a ->
+            ( "\\sin", latexA a )
+
+        Csc a ->
+            ( "\\csc", latexA a )
+
+        Cos a ->
+            ( "\\cos", latexA a )
+
+        Sec a ->
+            ( "\\sec", latexA a )
+
+        Tan a ->
+            ( "\\tan", latexA a )
+
+        Cot a ->
+            ( "\\cot", latexA a )
+
+        _ ->
+            ( "", "" )
 
 
 {-| Parentheses checker
@@ -806,6 +870,7 @@ parentheses config =
                 |= Pratt.subExpression 0 config
                 |. Parser.keyword "\\right"
                 |. Parser.symbol "]"
+            , Parser.problem "Parsing parentheses failed"
             ]
 
 
