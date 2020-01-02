@@ -2,6 +2,7 @@ import { Elm } from './Main.elm';
 import * as serviceWorker from './serviceWorker';
 import StaticMath from './components/StaticMath';
 import { InputMath } from './components/InputMath'
+import './assets/main.css'
 
 window.customElements.define('mathquill-static', StaticMath);
 window.customElements.define('mathquill-input', InputMath);
