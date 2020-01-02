@@ -1,18 +1,21 @@
-module Math exposing (Expr(..), MathError(..), asLatex, derivative, errorToString, fromLatex, fullSimplify)
+module Math exposing (Expr(..), MathError(..), asLatex, derivative, errorToString, fromLatex, fullSimplify, initExpr)
 
 {- Module for parsing and dealing with the Math stuff
    Many thanks to http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html
    And the Pratt Parser for existing, you've made my life so much easier
 -}
+-- import Parser exposing ((|.), (|=), Parser)
 
-import Parser exposing ((|.), (|=), Parser)
-import Pratt
+import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Token(..))
+import Pratt.Advanced as Pratt
 import Result
 import Set
 
 
 
+----------------------------------
 -- TYPES
+----------------------------------
 
 
 type
@@ -35,6 +38,7 @@ type
       -- other
     | Ln Expr
     | Sqrt Expr
+    | Negative Expr
 
 
 {-| Not ready yet - I need the absolute value funcion for the derivative of Arccsc and I don't want to do that yet lol.
@@ -56,34 +60,19 @@ type
 type MathError
     = DivisionByZero
     | ExtraVariable String
-    | ParserError (List String)
+    | ParserErrors (List String)
     | DerivativeError String
 
 
 
+------------------------------------
 -- HELPERS
+------------------------------------
 
 
 negate : Expr -> Expr
-negate expr =
-    case expr of
-        Const a ->
-            Const -a
-
-        Add a b ->
-            Add (negate a) (negate b)
-
-        Sub a b ->
-            Sub (negate a) (negate b)
-
-        Mult a b ->
-            Mult (negate a) b
-
-        Div a b ->
-            Div (negate a) b
-
-        f ->
-            Mult (Const -1) f
+negate =
+    Negative
 
 
 
@@ -176,10 +165,11 @@ derivativeIter expr =
                 (derivativeIter f)
                 (Mult (Div (Const 1) (Const 2)) (Pow f (negate <| Div (Const 1) (Const 2))))
 
+        Negative a ->
+            derivativeIter a
 
 
--- _ ->
---     Err <| DerivativeError "Not implemented yet lol"
+
 -- SIMPLIFY
 
 
@@ -319,6 +309,13 @@ simplify expr1 =
             else
                 Result.map2 Mult (Ok <| Const n) (simplify a)
 
+        --flipping division stuff - putting it before identities so it is guaranteed to fun
+        Div (Div a b) c ->
+            simplify <| Div a (Mult b c)
+
+        Div a (Div b c) ->
+            simplify <| Div (Mult a c) b
+
         -- Division Identities
         Div (Const a) (Const b) ->
             if b == 0 then
@@ -346,13 +343,6 @@ simplify expr1 =
 
             else
                 Result.map2 Div (Ok <| Const n) (simplify a)
-
-        --flipping
-        Div (Div a b) c ->
-            simplify <| Div a (Mult b c)
-
-        Div a (Div b c) ->
-            simplify <| Div (Mult a c) b
 
         -- removing common denominators (Maybe I should make a gcd function for the Expr type??)
         Div (Mult a b) (Mult c d) ->
@@ -392,6 +382,9 @@ simplify expr1 =
                 Result.map2 Div (simplify a) (simplify <| Mult b c)
 
         -- Exponential Identities
+        Pow a (Negative b) ->
+            Result.map2 Div (Ok <| Const 1) (Ok <| Pow a b)
+
         Pow (Pow c (Const b)) (Const a) ->
             Result.map (Pow c) (Ok <| Const (a * b))
 
@@ -410,6 +403,13 @@ simplify expr1 =
 
             else
                 Result.map2 Pow (simplify a) (Ok <| Const n)
+
+        Pow a (Div (Const b) (Const c)) ->
+            if b == 1 && c == 2 then
+                Result.map Sqrt (Ok a)
+
+            else
+                Result.map2 Pow (Ok a) (Result.map2 Div (Ok <| Const b) (Ok <| Const c))
 
         -- Simplify arguments
         Add a b ->
@@ -467,6 +467,9 @@ simplify expr1 =
         Ln a ->
             Result.map Ln (simplify a)
 
+        Negative (Negative a) ->
+            Ok a
+
         x ->
             Ok <| identity x
 
@@ -522,18 +525,14 @@ asLatex expr =
         Pow a b ->
             let
                 displayb =
-                    if shouldHaveBraces b then
-                        "^{" ++ asLatex b ++ "}"
-
-                    else
-                        "^" ++ asLatex b
+                    "^{" ++ asLatex b ++ "}"
             in
             if isTrig a then
                 -- if it's a trig functino then we put the power in between the operator and the content
                 trigPower a displayb
 
             else if shouldHaveParentheses (Pow a b) a then
-                -- else we jsut do the regular stuff
+                -- else we just do the regular stuff
                 "\\left(" ++ asLatex a ++ "\\right)" ++ displayb
 
             else
@@ -672,26 +671,6 @@ shouldHaveParentheses parent child =
             False
 
 
-{-| Braces Checker
-
-    The power function pur braces when its argumen is too complex.
-    e.g. x^3, x^{3x+6}
-    This function simple checks if the argument needs a brace
-
--}
-shouldHaveBraces : Expr -> Bool
-shouldHaveBraces expr =
-    case expr of
-        Const _ ->
-            False
-
-        Var _ ->
-            False
-
-        _ ->
-            True
-
-
 errorToString : MathError -> String
 errorToString err =
     case err of
@@ -701,21 +680,93 @@ errorToString err =
         ExtraVariable str ->
             "Extra variable! [" ++ str ++ "]"
 
-        ParserError strs ->
-            "Parser Error! " ++ List.foldl (++) "" strs
+        ParserErrors errors ->
+            {--}
+            -- especially in the oneOf parsers, we will get a bunch of errors stating that each one of the parsers failed.
+            -- we only need to display the last one
+            case lastElem errors of
+                Just e ->
+                    "Parser Error: " ++ e
 
+                Nothing ->
+                    "Unknown Parser error!"
+
+        --}
+        {--
+            -- This is for showing ALL the errors
+            List.foldl (\error acc -> acc ++ ", " ++ error) "[" errors
+                -- |> (\s -> s ++ "]")
+            --}
         DerivativeError str ->
             "Derivative Error! " ++ str
 
 
 
+-- used for ParserErrors
+-- this function is taken from [this reddit post](https://www.reddit.com/r/elm/comments/4j2fg6/finding_the_last_list_element/d33g6ae/)
+
+
+lastElem : List a -> Maybe a
+lastElem =
+    List.foldl (Just >> always) Nothing
+
+
+
+------------------------------------
 -- PARSER
+------------------------------------
+
+
+{-| Advanced type aliases so we don't have to write out as much
+-}
+type alias MyParser a =
+    Parser Context Problem a
+
+
+type Problem
+    = UnknownOperator
+    | BadVariable VariableProblem -- for variable parser
+    | BadNumber
+    | BadEnding -- when Parser.end fails
+    | ExpectingExpression String -- when we're parsing symbols we need a problem type
+    | ExpectingOperation String
+    | ExpectingSymbol String
+    | ExpectingNoSpace -- for multiplication
+
+
+type VariableProblem
+    = ExpectingAlpha
+    | Underscore
+    | LeftBracket
+    | RightBracket
+    | ExpectedAlphaNum
+
+
+type Context
+    = Expression
+    | BackslashVariable
+    | RegularVariable
+    | Parentheses
+
+
+type alias DeadEnd =
+    Parser.DeadEnd Context Problem
+
+
+{-| Advanced Pratt Parser type alias
+-}
+type alias PrattConfig a =
+    Pratt.Config Context Problem a
+
+
+
+-- actually running the parser on a latex string
 
 
 fromLatex : String -> Result MathError Expr
 fromLatex str =
     if str == "" then
-        Err <| ParserError [ "No Expression provided" ]
+        initExpr
 
     else
         String.trim str
@@ -723,107 +774,110 @@ fromLatex str =
             |> Result.mapError toMathErrors
 
 
+initExpr : Result MathError Expr
+initExpr =
+    Err <| ParserErrors [ "Waiting for expression" ]
 
--- top leve parser - make sure it reaches the end of the string
 
 
-parser : Parser Expr
+-- top level parser - make sure it reaches the end of the string
+
+
+parser : MyParser Expr
 parser =
     Parser.succeed identity
         |= expression
-        |. Parser.end
+        |. Parser.end BadEnding
 
 
 
 -- Thanks to the Pratt Parser for existing!
 
 
-expression : Parser Expr
+expression : MyParser Expr
 expression =
-    Pratt.expression
-        { oneOf =
-            [ negationCheck
-            , Pratt.prefix 2 cosine Cos
-            , Pratt.prefix 2 sine Sin
-            , Pratt.prefix 2 cosecant Csc
-            , Pratt.prefix 2 secant Sec
-            , Pratt.prefix 2 tangent Tan
-            , Pratt.prefix 2 cotangent Cot
-            , Pratt.prefix 2 natLog Ln
-            , sqrt
-            , division
-            , parentheses
-            , Pratt.literal variable
-            , Pratt.literal constant
+    Parser.inContext Expression <|
+        Pratt.expression
+            { oneOf =
+                [ negationCheck
+                , Pratt.prefix 2 cosine Cos
+                , Pratt.prefix 2 sine Sin
+                , Pratt.prefix 2 cosecant Csc
+                , Pratt.prefix 2 secant Sec
+                , Pratt.prefix 2 tangent Tan
+                , Pratt.prefix 2 cotangent Cot
+                , Pratt.prefix 2 natLog Ln
+                , sqrt
+                , division
+                , parentheses
+                , Pratt.literal variable
+                , Pratt.literal constant
 
-            -- sometimes we'll have x^{3x-1}, and this parses the braces.
-            -- We'll have to hope that an exponent is the only real use case of this parser tho rip
-            -- I'm pretty confident??
-            , powArgument
-            ]
-        , andThenOneOf =
-            [ Pratt.infixLeft 1 (Parser.symbol "+") Add
-            , Pratt.infixLeft 1 (Parser.symbol "-") Sub
-            , Pratt.infixLeft 3 (Parser.symbol "\\cdot") Mult
-            , Pratt.infixRight 5 (Parser.symbol "^") Pow
+                -- sometimes we'll have x^{3x-1}, and this parses the braces.
+                -- We'll have to hope that an exponent is the only real use case of this parser tho rip
+                -- I'm pretty confident??
+                , powArgument
+                , \_ -> Parser.problem UnknownOperator
+                ]
+            , andThenOneOf =
+                [ Pratt.infixLeft 1 (Parser.symbol (Token "+" (ExpectingOperation "+"))) Add
+                , Pratt.infixLeft 1 (Parser.symbol (Token "-" (ExpectingOperation "-"))) Sub
+                , Pratt.infixLeft 3 (Parser.symbol (Token "\\cdot" (ExpectingOperation "\\cdot"))) Mult
+                , Pratt.infixRight 5 (Parser.symbol (Token "^" (ExpectingOperation "^"))) Pow
 
-            -- allows parsing of expressions like 3x
-            , Pratt.infixLeft 3 (Parser.symbol "") Mult
-            ]
-        , spaces = Parser.succeed ()
-        }
+                -- allows parsing of expressions like 3x
+                , Pratt.infixLeft 3 (Parser.symbol (Token "" ExpectingNoSpace)) Mult
+                ]
+            , spaces = Parser.spaces
+            }
 
 
 
 -- negation only goes to the next term
 
 
-negationCheck : Pratt.Config Expr -> Parser Expr
+negationCheck : PrattConfig Expr -> MyParser Expr
 negationCheck =
-    Pratt.prefix 3 (Parser.symbol "-") negate
+    let
+        negationToken =
+            Token "-" (ExpectingOperation "-")
+    in
+    Pratt.prefix 3 (Parser.symbol negationToken) negate
 
 
-{-| Trigonometry functions
-
-Sin
-Cos
-Csc
-Sec
-Tan
-Cot
-
+{-| Basic trigonometry chompers
 -}
-sine : Parser ()
+sine : MyParser ()
 sine =
     unary "\\sin"
 
 
-cosine : Parser ()
+cosine : MyParser ()
 cosine =
     unary "\\cos"
 
 
-cosecant : Parser ()
+cosecant : MyParser ()
 cosecant =
     unary "\\csc"
 
 
-secant : Parser ()
+secant : MyParser ()
 secant =
     unary "\\sec"
 
 
-tangent : Parser ()
+tangent : MyParser ()
 tangent =
     unary "\\tan"
 
 
-cotangent : Parser ()
+cotangent : MyParser ()
 cotangent =
     unary "\\cot"
 
 
-natLog : Parser ()
+natLog : MyParser ()
 natLog =
     unary "\\ln"
 
@@ -832,10 +886,10 @@ natLog =
 -- helper function for unary operations
 
 
-unary : String -> Parser ()
+unary : String -> MyParser ()
 unary keyword =
     Parser.succeed ()
-        |. Parser.keyword keyword
+        |. Parser.keyword (Token keyword (ExpectingExpression keyword))
         |. Parser.spaces
 
 
@@ -843,48 +897,50 @@ unary keyword =
 -- because sqrt is not a simple prefix operation (it has braces) we need to use more stuff
 
 
-sqrt : Pratt.Config Expr -> Parser Expr
+sqrt : PrattConfig Expr -> MyParser Expr
 sqrt config =
     Parser.succeed Sqrt
-        |. Parser.symbol "\\sqrt"
-        |. Parser.symbol "{"
+        |. Parser.symbol (Token "\\sqrt" (ExpectingExpression "\\sqrt"))
+        |. Parser.symbol (Token "{" (ExpectingSymbol "{"))
         |= Pratt.subExpression 0 config
-        |. Parser.symbol "}"
+        |. Parser.symbol (Token "}" (ExpectingSymbol "}"))
 
 
-division : Pratt.Config Expr -> Parser Expr
+division : PrattConfig Expr -> MyParser Expr
 division config =
     Parser.succeed Div
-        |. Parser.keyword "\\frac"
-        |. Parser.symbol "{"
+        |. Parser.keyword (Token "\\frac" (ExpectingExpression "\\frac"))
+        |. Parser.symbol (Token "{" (ExpectingSymbol "{"))
         |= Pratt.subExpression 0 config
-        |. Parser.symbol "}"
-        |. Parser.symbol "{"
+        |. Parser.symbol (Token "}" (ExpectingSymbol "}"))
+        |. Parser.symbol (Token "{" (ExpectingSymbol "{"))
         |= Pratt.subExpression 0 config
-        |. Parser.symbol "}"
+        |. Parser.symbol (Token "}" (ExpectingSymbol "}"))
 
 
 
 -- we accept both () and [] parentheses
 
 
-parentheses : Pratt.Config Expr -> Parser Expr
+parentheses : PrattConfig Expr -> MyParser Expr
 parentheses config =
-    Parser.succeed identity
-        |. Parser.keyword "\\left"
-        |= Parser.oneOf
-            [ Parser.succeed identity
-                |. Parser.symbol "("
-                |= Pratt.subExpression 0 config
-                |. Parser.keyword "\\right"
-                |. Parser.symbol ")"
-            , Parser.succeed identity
-                |. Parser.symbol "["
-                |= Pratt.subExpression 0 config
-                |. Parser.keyword "\\right"
-                |. Parser.symbol "]"
-            , Parser.problem "Parsing parentheses failed"
-            ]
+    Parser.inContext Parentheses <|
+        Parser.succeed identity
+            |. Parser.keyword (Token "\\left" (ExpectingExpression "\\left"))
+            |= Parser.oneOf
+                [ Parser.succeed identity
+                    |. Parser.symbol (Token "(" (ExpectingSymbol "("))
+                    |= Pratt.subExpression 0 config
+                    |. Parser.keyword (Token "\\right" (ExpectingExpression "\\right"))
+                    |. Parser.symbol (Token ")" (ExpectingSymbol ")"))
+                , Parser.succeed identity
+                    |. Parser.symbol (Token "[" (ExpectingSymbol "["))
+                    |= Pratt.subExpression 0 config
+                    |. Parser.keyword (Token "\\right" (ExpectingExpression "\\right"))
+                    |. Parser.symbol (Token "]" (ExpectingSymbol "]"))
+
+                -- , Parser.problem "I am expecting a pair of parentheses but that failed - I can only handle () and []! If you are trying to type in absolute value, I don't support that"
+                ]
 
 
 {-| Variables
@@ -892,33 +948,36 @@ parentheses config =
     Any alpha character
     Any alpha character followed by an underscore and alphanumeric (e.g. a_1 or a_b)
     Any alpha character followed by an underscore with anything in {} (e.g. a_{thingy\pi 123}
-    One of the greek letters (e.g. \theta, \phi, etc) that are not from a "list"
+    One of the greek letters (e.g. \theta, \phi, etc) that are not from a "list" of otherwise defined tokens
 
     ALSO HOLY COW THE PARSER ONEOF COMBINATIONS WORKS LOL I CANT BELIEVE IT
 
 -}
-variable : Parser Expr
+variable : MyParser Expr
 variable =
     Parser.succeed Var
         |= Parser.oneOf
-            [ Parser.getChompedString <|
-                Parser.succeed ()
-                    |. Parser.chompIf Char.isAlpha
-                    |. Parser.oneOf
-                        [ Parser.chompIf (\c -> c == '_')
-                            |. Parser.oneOf
-                                [ Parser.chompIf (\c -> c == '{')
-                                    |. Parser.chompWhile (\c -> not (c == '}'))
-                                    |. Parser.chompIf (\c -> c == '}')
-                                , Parser.chompIf Char.isAlphaNum
-                                ]
-                        , Parser.succeed ()
-                        ]
+            [ Parser.succeed ()
+                |. Parser.chompIf Char.isAlpha (BadVariable ExpectingAlpha)
+                |. Parser.oneOf
+                    [ Parser.chompIf (\c -> c == '_') (BadVariable Underscore)
+                        |. Parser.oneOf
+                            [ Parser.chompIf (\c -> c == '{') (BadVariable LeftBracket)
+                                |. Parser.chompWhile (\c -> not (c == '}'))
+                                |. Parser.chompIf (\c -> c == '}') (BadVariable RightBracket)
+                            , Parser.chompIf Char.isAlphaNum (BadVariable ExpectedAlphaNum)
+                            ]
+                    , Parser.succeed ()
+                    ]
+                |> Parser.getChompedString
+                |> Parser.inContext RegularVariable
             , Parser.variable
                 { start = \c -> c == '\\'
                 , inner = Char.isAlpha
                 , reserved = Set.fromList [ "\\cdot", "\\frac", "\\left", "\\right" ]
+                , expecting = BadVariable ExpectingAlpha
                 }
+                |> Parser.inContext BackslashVariable
             ]
 
 
@@ -928,7 +987,7 @@ variable =
 -- Good thing we have Functional Programming, and good thing the Elm Parser is so flexible!
 
 
-constant : Parser Expr
+constant : MyParser Expr
 constant =
     Parser.getChompedString (Parser.chompWhile (\c -> Char.isDigit c || c == '.'))
         |> Parser.map String.toFloat
@@ -939,80 +998,71 @@ constant =
                         Parser.succeed n
 
                     Nothing ->
-                        Parser.problem "number failed"
+                        Parser.problem BadNumber
             )
         |> Parser.map Const
 
 
-powArgument : Pratt.Config Expr -> Parser Expr
+powArgument : PrattConfig Expr -> MyParser Expr
 powArgument config =
     Parser.succeed identity
-        |. Parser.symbol "{"
+        |. Parser.symbol (Token "{" (ExpectingSymbol "{"))
         |= Pratt.subExpression 0 config
-        |. Parser.symbol "}"
+        |. Parser.symbol (Token "}" (ExpectingSymbol "}"))
 
 
-toMathErrors : List Parser.DeadEnd -> MathError
+toMathErrors : List DeadEnd -> MathError
 toMathErrors deadends =
-    List.map
-        (\deadend ->
-            problemToString deadend.problem
-                |> (++) " "
-                |> ((++) <| " at row " ++ String.fromInt deadend.row)
-                |> ((++) <| " at col " ++ String.fromInt deadend.col)
-        )
-        deadends
-        |> ParserError
+    List.map deadendToString deadends
+        |> ParserErrors
 
 
-problemToString : Parser.Problem -> String
-problemToString p =
-    case p of
-        Parser.Expecting str ->
-            "Expecting " ++ str
+deadendToString : DeadEnd -> String
+deadendToString deadend =
+    case deadend.problem of
+        UnknownOperator ->
+            "There is either an unknown operator, we're waiting for you to fill out an argument, or it's a mistake in the code."
 
-        Parser.ExpectingInt ->
-            "ExpectingInt"
+        BadVariable issue ->
+            case issue of
+                ExpectingAlpha ->
+                    if List.member BackslashVariable (List.map .context deadend.contextStack) then
+                        "I was trying to parse a backslash variable, but either I didn't see a backslash or there were non-alpha characters in the name" ++ withLocation deadend
 
-        Parser.ExpectingHex ->
-            "ExpectingHex"
+                    else
+                        "I need variables start off with only alpha characters!" ++ withLocation deadend
 
-        Parser.ExpectingOctal ->
-            "ExpectingOctal"
+                Underscore ->
+                    "Expecting something in variable subscript" ++ withLocation deadend
 
-        Parser.ExpectingBinary ->
-            "ExpectingBinary"
+                LeftBracket ->
+                    "Uh oh, we're expecting a left bracket when parsing a variable, but this isn't your fault. Please click \" More Info\" to learn more" ++ withLocation deadend
 
-        Parser.ExpectingFloat ->
-            "ExpectingFloat"
+                RightBracket ->
+                    "Uh oh, we're expecting a right bracket when parsing a variable, but this isn't your fault. Please click \" More Info\" to learn more" ++ withLocation deadend
 
-        Parser.ExpectingNumber ->
-            "ExpectingNumber"
+                ExpectedAlphaNum ->
+                    "Variable subscripts can only contain alphanumeric numbers" ++ withLocation deadend
 
-        Parser.ExpectingVariable ->
-            "ExpectingVariable"
+        BadNumber ->
+            "Error parsing a number" ++ withLocation deadend
 
-        Parser.ExpectingSymbol str ->
-            if str == "-" then
-                "Negation failed"
+        BadEnding ->
+            "Couldn't finish parsing the expression completely!" ++ withLocation deadend
 
-            else
-                "ExpectingSymbol " ++ str
+        ExpectingExpression str ->
+            "Expecting expression: " ++ str ++ withLocation deadend
 
-        Parser.ExpectingKeyword str ->
-            -- if str == "\\frac" then
-            --     "Division failed"
-            -- else
-            "ExpectingKeyword " ++ str
+        ExpectingOperation str ->
+            "Expecting operation: " ++ str ++ withLocation deadend
 
-        Parser.ExpectingEnd ->
-            "ExpectingEnd"
+        ExpectingSymbol str ->
+            "Expecting symbol: " ++ str ++ withLocation deadend
 
-        Parser.UnexpectedChar ->
-            "UnexpectedChar"
+        ExpectingNoSpace ->
+            "Expecting no space for multiplication" ++ withLocation deadend
 
-        Parser.Problem str ->
-            "Problem " ++ str
 
-        Parser.BadRepeat ->
-            "BadRepeat"
+withLocation : DeadEnd -> String
+withLocation deadend =
+    " (column: " ++ String.fromInt deadend.col ++ ")"
