@@ -2,13 +2,11 @@ module Main exposing (main)
 
 import Browser
 import Element exposing (Element, centerX, fill, height, spacing, width)
-import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
-import Json.Decode
 import Json.Encode
 import Math exposing (Expr(..), MathError(..))
 import Ports
@@ -281,7 +279,7 @@ update msg model =
 
         Calculate ->
             ( { model
-                | derivative = Debug.log "derivative calculated" (Math.derivative model.expr)
+                | derivative = Math.derivative model.expr
               }
             , Cmd.none
             )

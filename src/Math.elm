@@ -80,13 +80,13 @@ derivative =
 derivativeIter : Expr -> Result MathError Expr
 derivativeIter expr =
     case expr of
-        Const a ->
+        Const _ ->
             Ok <| Const 0
 
         Var "x" ->
             Ok <| Const 1
 
-        Var str ->
+        Var _ ->
             Ok <| Const 0
 
         Add a b ->
@@ -478,7 +478,7 @@ asLatex expr =
             asLatex a ++ "-" ++ asLatex b
 
         Mult (Const a) (Const b) ->
-            String.fromFloat a ++ "\\cdot" ++ String.fromFloat a
+            String.fromFloat a ++ "\\cdot" ++ String.fromFloat b
 
         Mult (Const a) b ->
             if a == -1 then
