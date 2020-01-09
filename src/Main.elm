@@ -8,6 +8,7 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Json.Encode
+import Keyboard exposing (Key(..))
 import Math exposing (Expr(..), MathError(..))
 import Ports
 
@@ -30,6 +31,8 @@ type alias Model =
     { latexStr : String
     , expr : Result MathError Expr
     , derivative : Result MathError Expr
+    , debug : Bool
+    , pressedKeys : List Keyboard.Key
     }
 
 
@@ -38,6 +41,8 @@ init _ =
     ( { latexStr = ""
       , expr = Math.initExpr
       , derivative = Math.initExpr
+      , debug = False
+      , pressedKeys = []
       }
     , Cmd.none
     )
@@ -62,9 +67,20 @@ view model =
             [ Element.text "Derivative Calculator with Latex" ]
         , heading 1 "Derivative Input"
         , input model
+        , if model.debug then
+            latexToExpr model.expr
+
+          else
+            Element.none
         , heading 2 "Derivative"
         , derivative model
+        , if model.debug then
+            latexToExpr model.derivative
+
+          else
+            Element.none
         ]
+        -- surrounds with borders
         |> (\el ->
                 Element.row
                     [ width fill, height fill ]
@@ -76,7 +92,19 @@ view model =
         |> Element.layout
             [ Font.family
                 [ Font.typeface "Computer Modern" ]
+            , Element.inFront <| debugModeToggle model
             ]
+
+
+debugModeToggle : Model -> Element Msg
+debugModeToggle model =
+    Input.checkbox
+        []
+        { onChange = ToggleDebug
+        , icon = Input.defaultCheckbox
+        , checked = model.debug
+        , label = Input.labelLeft [] (Element.text "Debug mode")
+        }
 
 
 heading : Int -> String -> Element Msg
@@ -144,8 +172,8 @@ latex model =
         ]
 
 
-latexToExpr : Model -> Element Msg
-latexToExpr model =
+latexToExpr : Result MathError Expr -> Element Msg
+latexToExpr resultExpr =
     Element.column
         [ centerX ]
         [ Element.paragraph
@@ -155,7 +183,7 @@ latexToExpr model =
             , Element.padding 16
             ]
             [ Element.text "Latex → Expr" ]
-        , case model.expr of
+        , case resultExpr of
             Ok expr ->
                 Element.paragraph
                     [ Font.center ]
@@ -211,10 +239,10 @@ derivative model =
         |> Element.el
             [ centerX
             , Element.scrollbarX
+            , width fill
             ]
         |> Element.el
-            [ centerX
-            , spacing 16
+            [ spacing 16
             , Element.padding 16
             , width fill
             ]
@@ -236,6 +264,7 @@ functionInput _ =
             [ Html.node "mathquill-input" [] [] ]
         ]
         |> Element.html
+        |> Element.el [ Element.scrollbarX ]
 
 
 
@@ -257,14 +286,19 @@ staticMath latexStr =
 
 
 type Msg
-    = ChangedLatexStr String
+    = ToggleDebug Bool
+    | ChangedLatexStr String
     | Calculate
     | Clear
+    | NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ToggleDebug currentDebugMode ->
+            ( { model | debug = currentDebugMode }, Cmd.none )
+
         ChangedLatexStr latexStr ->
             ( { model
                 | latexStr = latexStr
@@ -274,9 +308,7 @@ update msg model =
             )
 
         Calculate ->
-            ( { model
-                | derivative = Math.derivative model.expr
-              }
+            ( { model | derivative = Math.derivative model.expr }
             , Cmd.none
             )
 
@@ -289,6 +321,9 @@ update msg model =
             , Ports.clear ()
             )
 
+        NoOp ->
+            ( model, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -296,4 +331,17 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Ports.changedLatex ChangedLatexStr
+    Sub.batch
+        [ Ports.changedLatex ChangedLatexStr
+        , Keyboard.ups keyboardSubscription
+        ]
+
+
+keyboardSubscription : Keyboard.RawKey -> Msg
+keyboardSubscription rawKey =
+    case Keyboard.whitespaceKey rawKey of
+        Just Enter ->
+            Debug.log "Calculate!" Calculate
+
+        _ ->
+            NoOp
