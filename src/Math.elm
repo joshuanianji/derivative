@@ -115,12 +115,18 @@ derivativeIter expr =
         Pow (Var "x") (Const b) ->
             Mult (Const b) (Pow (Var "x") (Const (b - 1)))
 
+        Pow (Var "x") (Var a) ->
+            Mult (Var a) (Pow (Var "x") (Sub (Var a) (Const 1)))
+
         Pow (Var "e") f ->
             Mult (derivativeIter f) (Pow (Var "e") f)
 
         -- (d/dx) f(x)^n = f'(x) * n * f(x) ^ (n-1)
         Pow a (Const n) ->
             Mult (derivativeIter a) (Mult (Const n) (Pow a (Const <| n - 1)))
+
+        Pow a (Var b) ->
+            Mult (derivativeIter a) (Mult (Var b) (Pow a (Sub (Var b) (Const 1))))
 
         -- LOL I JUST USED THIS (https://mathvault.ca/exponent-rule-derivative/#Example_1_pix)
         Pow f g ->
@@ -136,24 +142,26 @@ derivativeIter expr =
             Mult (derivativeIter f) (Cos f)
 
         Csc f ->
-            Mult (negate <| derivativeIter f) <|
-                Mult (Csc f) (Cot f)
+            Mult (Csc f) (Cot f)
+                |> Mult (derivativeIter f)
+                |> negate
 
         Cos f ->
-            Mult (derivativeIter f) <|
-                negate (Sin f)
+            Sin f
+                |> Mult (derivativeIter f)
+                |> negate
 
         Sec f ->
-            Mult (derivativeIter f) <|
-                Mult (Sec f) (Tan f)
+            Mult (Sec f) (Tan f)
+                |> Mult (derivativeIter f)
 
         Tan f ->
-            Mult (derivativeIter f) <|
-                Mult (Sec f) (Sec f)
+            Mult (Sec f) (Sec f)
+                |> Mult (derivativeIter f)
 
         Cot f ->
-            Mult (derivativeIter f) <|
-                Mult (Csc f) (Csc f)
+            Mult (Csc f) (Csc f)
+                |> Mult (derivativeIter f)
 
         -- Logarithm
         Ln f ->
@@ -166,7 +174,7 @@ derivativeIter expr =
                 (Mult (Div (Const 1) (Const 2)) (Pow f (negate <| Div (Const 1) (Const 2))))
 
         Negative a ->
-            derivativeIter a
+            Mult (Const -1) (derivativeIter a)
 
 
 
@@ -199,6 +207,14 @@ fullSimplify expr =
 simplify : Expr -> Result MathError Expr
 simplify expr1 =
     case expr1 of
+        Const a ->
+            if a < 0 then
+                Negative (Const -a)
+                    |> Ok
+
+            else
+                Ok <| Const a
+
         -- Addition and Subtraction Identities
         Add (Const a) (Const b) ->
             Ok <| Const (a + b)
@@ -303,6 +319,9 @@ simplify expr1 =
             if n == 1 then
                 simplify a
 
+            else if n == -1 then
+                Result.map Negative <| simplify a
+
             else if n == 0 then
                 Ok <| Const 0
 
@@ -398,9 +417,6 @@ simplify expr1 =
             else if n == 0 then
                 Ok <| Const 1
 
-            else if n < 0 then
-                Result.map (Div <| Const 1) (Ok <| Pow a (Const -n))
-
             else
                 Result.map2 Pow (simplify a) (Ok <| Const n)
 
@@ -467,8 +483,34 @@ simplify expr1 =
         Ln a ->
             Result.map Ln (simplify a)
 
+        -- simplifying negatives
+        Negative (Mult (Const a) b) ->
+            if a == 1 then
+                Result.map Negative <| simplify b
+
+            else if a < 0 then
+                Result.map2 Mult (Ok <| Const -a) (simplify b)
+
+            else
+                Result.map2 Mult (simplify b) (Ok <| Const a)
+                    |> Result.map Negative
+
+        Negative (Mult a (Const b)) ->
+            if b == 1 then
+                Result.map Negative <| simplify a
+
+            else if b < 0 then
+                Result.map2 Mult (simplify a) (Ok <| Const -b)
+
+            else
+                Result.map2 Mult (simplify a) (Ok <| Const b)
+                    |> Result.map Negative
+
         Negative (Negative a) ->
             Ok a
+
+        Negative a ->
+            Result.map Negative <| simplify a
 
         x ->
             Ok <| identity x
@@ -499,6 +541,10 @@ asLatex expr =
         Mult (Const a) b ->
             if a == -1 then
                 "-" ++ asLatex b
+                -- if we need to write 3(x-2) or something
+
+            else if shouldHaveParentheses (Mult (Const a) b) b then
+                String.fromFloat a ++ "\\left(" ++ asLatex b ++ "\\right)"
 
             else
                 String.fromFloat a ++ asLatex b
@@ -543,6 +589,9 @@ asLatex expr =
 
         Sqrt f ->
             "\\sqrt{" ++ asLatex f ++ "}"
+
+        Negative f ->
+            "-" ++ asLatex f
 
         trig ->
             trigToString trig
@@ -629,7 +678,7 @@ trigToString trig =
     will have parentheses around them
 
     Note that `asLatex <| Mult (Var "x") (Sub c d)` would output `x(c - d)`
-    **Only binary operations are considered!**
+    **Only binary operations are considered! (except the Negative of course)**
 
 -}
 shouldHaveParentheses : Expr -> Expr -> Bool
@@ -652,12 +701,16 @@ shouldHaveParentheses parent child =
                 Pow _ _ ->
                     Just 3
 
+                Negative a ->
+                    precedenceLevel a
+
                 -- disregard unary operations
                 _ ->
                     Nothing
 
         relativePrecedence =
             Maybe.map2 (-) (precedenceLevel parent) (precedenceLevel child)
+                |> Debug.log ("rel precedence for: " ++ Debug.toString parent ++ " and " ++ Debug.toString child)
     in
     case relativePrecedence of
         Just n ->
