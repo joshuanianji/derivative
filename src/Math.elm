@@ -116,7 +116,14 @@ derivativeIter expr =
             Mult (Const b) (Pow (Var "x") (Const (b - 1)))
 
         Pow (Var "x") (Var a) ->
-            Mult (Var a) (Pow (Var "x") (Sub (Var a) (Const 1)))
+            case a of
+                "x" ->
+                    Mult
+                        (Pow (Var "x") (Var "x"))
+                        (Add (Ln (Var "x")) (Const 1))
+
+                _ ->
+                    Mult (Var a) (Pow (Var "x") (Sub (Var a) (Const 1)))
 
         Pow (Var "e") f ->
             Mult (derivativeIter f) (Pow (Var "e") f)
@@ -124,9 +131,6 @@ derivativeIter expr =
         -- (d/dx) f(x)^n = f'(x) * n * f(x) ^ (n-1)
         Pow a (Const n) ->
             Mult (derivativeIter a) (Mult (Const n) (Pow a (Const <| n - 1)))
-
-        Pow a (Var b) ->
-            Mult (derivativeIter a) (Mult (Var b) (Pow a (Sub (Var b) (Const 1))))
 
         -- LOL I JUST USED THIS (https://mathvault.ca/exponent-rule-derivative/#Example_1_pix)
         Pow f g ->
@@ -517,7 +521,9 @@ simplify expr1 =
 
 
 
+------------------------------------
 -- DISPLAY - displays to latex
+------------------------------------
 
 
 asLatex : Expr -> String
@@ -710,15 +716,10 @@ shouldHaveParentheses parent child =
 
         relativePrecedence =
             Maybe.map2 (-) (precedenceLevel parent) (precedenceLevel child)
-                |> Debug.log ("rel precedence for: " ++ Debug.toString parent ++ " and " ++ Debug.toString child)
     in
     case relativePrecedence of
         Just n ->
-            if n > 0 then
-                True
-
-            else
-                False
+            n > 0
 
         _ ->
             False
