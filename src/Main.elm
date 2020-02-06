@@ -438,7 +438,6 @@ type Msg
     | Calculate
     | Clear
     | KeyMsg Keyboard.Msg
-    | NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -463,7 +462,7 @@ update msg model =
 
         Calculate ->
             ( { model | derivative = Math.derivative model.expr }
-            , Debug.log "calculate!" Cmd.none
+            , Cmd.none
             )
 
         Clear ->
@@ -478,7 +477,7 @@ update msg model =
         KeyMsg keyMsg ->
             let
                 newKeys =
-                    Debug.log "newKeys" <| Keyboard.update keyMsg model.pressedKeys
+                    Keyboard.update keyMsg model.pressedKeys
 
                 -- possible shortcuts in order of precedence. If multiple are valid we enact the first one
                 possibleShortcuts =
@@ -502,15 +501,12 @@ update msg model =
                 newModel =
                     { model | pressedKeys = newKeys }
             in
-            case Debug.log "shortcuts" shortcuts of
+            case shortcuts of
                 message :: _ ->
                     update message newModel
 
                 [] ->
                     ( newModel, Cmd.none )
-
-        NoOp ->
-            ( model, Cmd.none )
 
 
 
