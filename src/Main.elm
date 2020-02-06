@@ -35,7 +35,7 @@ type alias Model =
     , debug : Bool
     , showCredits : Bool
     , tutorial : Bool
-    , pressedKeys : List Keyboard.Key
+    , pressedKeys : List Key
     }
 
 
@@ -437,6 +437,7 @@ type Msg
     | ChangedLatexStr String
     | Calculate
     | Clear
+    | KeyMsg Keyboard.Msg
     | NoOp
 
 
@@ -462,7 +463,7 @@ update msg model =
 
         Calculate ->
             ( { model | derivative = Math.derivative model.expr }
-            , Cmd.none
+            , Debug.log "calculate!" Cmd.none
             )
 
         Clear ->
@@ -473,6 +474,40 @@ update msg model =
               }
             , Ports.clear ()
             )
+
+        KeyMsg keyMsg ->
+            let
+                newKeys =
+                    Debug.log "newKeys" <| Keyboard.update keyMsg model.pressedKeys
+
+                -- possible shortcuts in order of precedence. If multiple are valid we enact the first one
+                possibleShortcuts =
+                    [ ( Keyboard.Enter, Calculate ) --calculate derivative
+                    , ( Keyboard.Character "C", Clear ) -- clear
+                    , ( Keyboard.Character "D", ToggleDebug (not model.debug) ) -- debug
+                    , ( Keyboard.Character "T", ToggleTutorial ) -- tutorial
+                    ]
+
+                shortcuts =
+                    List.filterMap
+                        (\( key, message ) ->
+                            if List.member key newKeys then
+                                Just message
+
+                            else
+                                Nothing
+                        )
+                        possibleShortcuts
+
+                newModel =
+                    { model | pressedKeys = newKeys }
+            in
+            case Debug.log "shortcuts" shortcuts of
+                message :: _ ->
+                    update message newModel
+
+                [] ->
+                    ( newModel, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -486,15 +521,15 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ Ports.changedLatex ChangedLatexStr
-        , Keyboard.ups keyboardSubscription
+        , Sub.map KeyMsg Keyboard.subscriptions
         ]
 
 
-keyboardSubscription : Keyboard.RawKey -> Msg
-keyboardSubscription rawKey =
-    case Keyboard.whitespaceKey rawKey of
-        Just Enter ->
-            Calculate
 
-        _ ->
-            NoOp
+-- keyboardSubscription : Keyboard.RawKey -> Msg
+-- keyboardSubscription rawKey =
+--     case Keyboard.whitespaceKey rawKey of
+--         Just Enter ->
+--             Calculate
+--         _ ->
+--             NoOp
