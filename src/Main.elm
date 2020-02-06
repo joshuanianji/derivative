@@ -481,16 +481,17 @@ update msg model =
 
                 -- possible shortcuts in order of precedence. If multiple are valid we enact the first one
                 possibleShortcuts =
-                    [ ( Keyboard.Enter, Calculate ) --calculate derivative
-                    , ( Keyboard.Character "C", Clear ) -- clear
-                    , ( Keyboard.Character "D", ToggleDebug (not model.debug) ) -- debug
-                    , ( Keyboard.Character "T", ToggleTutorial ) -- tutorial
+                    [ ( [ Keyboard.Enter ], Calculate ) --calculate derivative
+                    , ( [ Keyboard.Shift, Keyboard.Character "C" ], Clear ) -- clear
+                    , ( [ Keyboard.Shift, Keyboard.Character "D" ], ToggleDebug (not model.debug) ) -- debug
+                    , ( [ Keyboard.Shift, Keyboard.Character "T" ], ToggleTutorial ) -- tutorial
                     ]
 
                 shortcuts =
                     List.filterMap
-                        (\( key, message ) ->
-                            if List.member key newKeys then
+                        (\( keys, message ) ->
+                            -- if all the keys are currently being held down
+                            if List.all (\k -> List.member k newKeys) keys then
                                 Just message
 
                             else
