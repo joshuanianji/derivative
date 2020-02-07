@@ -1,7 +1,8 @@
 module Main exposing (main)
 
 import Browser
-import Element exposing (Element, centerX, centerY, fill, height, padding, px, spacing, width)
+import Element exposing (Element, centerX, centerY, fill, height, padding, px, spacing, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
@@ -46,7 +47,7 @@ init _ =
       , derivative = Math.initExpr
       , debug = False
       , showCredits = False
-      , tutorial = False
+      , tutorial = True
       , pressedKeys = []
       }
     , Cmd.none
@@ -100,9 +101,93 @@ tutorial model =
             [ Font.size 32
             , Font.center
             ]
-            [ Element.text "Derivative Calculator with Latex" ]
-        , Element.el [ centerX ] <| Element.text "Tutorial & Help Guide"
+            [ text "Derivative Calculator with Latex" ]
+        , Element.el [ centerX ] <| text "Tutorial & Help Guide"
         , Element.el [ centerX ] <| tutorialToggle model
+        , heading 1 "Overview"
+        , heading 2 "Supported Functions"
+        , supportedFunctions
+        , heading 3 "Caveats"
+        , heading 4 "Keyboard Shortcuts"
+        ]
+
+
+supportedFunctions : Element Msg
+supportedFunctions =
+    let
+        supportedFunctionsTable =
+            [ { function = "Four major operations"
+              , display = "+ - \\cdot \\frac{a}{b}"
+              , typed = "+ - * a/b"
+              }
+            , { function = "Exponents"
+              , display = "a^b"
+              , typed = "a^b"
+              }
+            , { function = "Six Major Trigonometric Functions"
+              , display = "sinx \\cdot \\tan (3 \\cdot \\pi x)"
+              , typed = "sinx * tan(3\\pix)"
+              }
+            , { function = "Square root"
+              , display = "\\sqrt{}"
+              , typed = "sqrt"
+              }
+            , { function = "Logarithm"
+              , display = "\\ln"
+              , typed = "ln"
+              }
+            ]
+    in
+    Element.column
+        [ spacing 16
+        , width fill
+        ]
+        [ Element.textColumn
+            [ spacing 16
+            , width fill
+            ]
+            [ Element.paragraph
+                [ spacing 4 ]
+                [ text "I used the "
+                , link "MathQuill" "http://mathquill.com/"
+                , text " library, the same one "
+                , link "Desmos" "http://desmos.com"
+                , text " uses for its calculator. Because of this, the latex input is just as intuitive as Desmos!"
+                ]
+            , Element.paragraph
+                [ spacing 4 ]
+                [ text "We support variables, including subscripts. Any alpha character followed by an optional subscript, which you can create by typing in "
+                , typed "_"
+                , text ", will be treated as a constant. This program does not support multivariable calculus or implicit differentiation."
+                ]
+            , Element.paragraph
+                [ spacing 4 ]
+                [ text "For a full list of supported functions, refer to the table below."
+                ]
+
+            -- make a table
+            , Element.table
+                [ spacing 8 ]
+                { data = supportedFunctionsTable
+                , columns =
+                    [ { header = Element.el [ Font.bold ] <| Element.text "Function"
+                      , width = fill
+                      , view =
+                            \f -> Element.el [ centerY ] <| Element.text f.function
+                      }
+                    , { header = Element.el [ Font.bold ] <| Element.text "Display"
+                      , width = fill
+                      , view =
+                            \f -> Element.el [ centerY ] <| staticMath f.display
+                      }
+                    , { header = Element.el [ Font.bold ] <| Element.text "How to Type It"
+                      , width = fill
+                      , view =
+                            \f -> Element.el [ centerY ] <| typed f.typed
+                      }
+                    ]
+                }
+            ]
         ]
 
 
@@ -125,10 +210,10 @@ tutorialToggle model =
             ]
         <|
             if model.tutorial then
-                Element.text "╳"
+                text "╳"
 
             else
-                Element.text "?"
+                text "?"
 
 
 
@@ -146,12 +231,12 @@ derivativeView model =
             [ Font.size 32
             , Font.center
             ]
-            [ Element.text "Derivative Calculator with Latex" ]
+            [ text "Derivative Calculator with Latex" ]
         , Element.paragraph
             [ width fill
             , Font.center
             ]
-            [ Element.text "Created by "
+            [ text "Created by "
             , link "Joshua Ji" "https://github.com/joshuanianji/Derivative"
             ]
         , Element.el [ centerX ] <| tutorialToggle model
@@ -187,15 +272,15 @@ debugModeToggle model =
                     ]
                 <|
                     if debugOn then
-                        Element.text "Off"
+                        text "Off"
 
                     else
-                        Element.text "On"
+                        text "On"
         , checked = model.debug
         , label =
             Input.labelLeft
                 [ unselectable ]
-                (Element.text "Turn debug mode")
+                (text "Turn debug mode")
         }
 
 
@@ -207,10 +292,10 @@ heading num str =
         , Font.size 30
         , Element.paddingXY 0 24
         ]
-        [ Element.text <| String.fromInt num
+        [ text <| String.fromInt num
 
         -- use padding to simulate tab
-        , Element.el [ Element.paddingXY 30 0 ] <| Element.text str
+        , Element.el [ Element.paddingXY 30 0 ] <| text str
         ]
 
 
@@ -232,7 +317,7 @@ input model =
                 , Element.padding 12
                 ]
                 { onPress = Just Clear
-                , label = Element.text "Clear"
+                , label = text "Clear"
                 }
             , Input.button
                 [ Border.width 1
@@ -241,7 +326,7 @@ input model =
                 , Element.padding 12
                 ]
                 { onPress = Just Calculate
-                , label = Element.text "Calculate"
+                , label = text "Calculate"
                 }
             ]
         ]
@@ -257,46 +342,22 @@ latexToExpr resultExpr =
             , spacing 16
             , Element.padding 16
             ]
-            [ Element.text "Latex → Expr" ]
+            [ text "Latex → Expr" ]
         , case resultExpr of
             Ok expr ->
                 Element.paragraph
                     [ Font.center ]
-                    [ Element.text <| Debug.toString expr ]
+                    [ text <| Debug.toString expr ]
 
             Err error ->
                 Math.errorToString error
-                    |> Element.text
+                    |> text
                     |> List.singleton
                     |> Element.paragraph
                         [ Font.center
                         , Element.spacing 16
                         ]
         ]
-
-
-
--- making sure the asLatex function works
--- exprToLatex : Model -> Element Msg
--- exprToLatex model =
---     Element.column
---         [ centerX
---         , spacing 16
---         , Border.width 1
---         , Border.color <| Element.rgb 0 0 0
---         , Element.padding 16
---         ]
---         [ Element.paragraph
---             [ Font.size 32
---             , Font.center
---             ]
---             [ Element.text "Expr -> Latex" ]
---         , Element.el [ centerX ] <|
---             Element.text <|
---                 (Result.map Math.asLatex model.expr
---                     |> Result.withDefault "Errors lol check above"
---                 )
---         ]
 
 
 derivative : Model -> Element Msg
@@ -309,7 +370,9 @@ derivative model =
 
         Err mathError ->
             Math.errorToString mathError
-                |> Element.text
+                |> text
+                |> List.singleton
+                |> Element.paragraph [ Font.center ]
     )
         |> Element.el
             [ centerX
@@ -334,12 +397,12 @@ credits model =
                     , Element.scrollbarX
                     , width fill
                     ]
-                    [ Element.text "Special thanks to:"
-                    , Element.paragraph [] [ link "Desmos" "http://desmos.com", Element.text ", for being such a great graphing calculator." ]
-                    , Element.paragraph [] [ link "MathQuill" "http://mathquill.com/", Element.text ", for making it so easy manage LaTeX input and output." ]
-                    , Element.paragraph [] [ link "Create Elm App" "https://github.com/halfzebra/create-elm-app", Element.text " with which this project is bootstrapped." ]
-                    , Element.paragraph [] [ link "Dmy" "https://github.com/dmy", Element.text ", for creating the beautiful ", link "Elm Pratt Parser" "https://github.com/dmy/elm-pratt-parser." ]
-                    , Element.paragraph [] [ link "The Elm Language" "https://elm-lang.org/", Element.text " for being so easy to work with." ]
+                    [ text "Special thanks to:"
+                    , Element.paragraph [] [ link "Desmos" "http://desmos.com", text ", for being such a great graphing calculator." ]
+                    , Element.paragraph [] [ link "MathQuill" "http://mathquill.com/", text ", for making it so easy manage LaTeX input and output." ]
+                    , Element.paragraph [] [ link "Create Elm App" "https://github.com/halfzebra/create-elm-app", text " with which this project is bootstrapped." ]
+                    , Element.paragraph [] [ link "Dmy" "https://github.com/dmy", text ", for creating the beautiful ", link "Elm Pratt Parser" "https://github.com/dmy/elm-pratt-parser." ]
+                    , Element.paragraph [] [ link "The Elm Language" "https://elm-lang.org/", text " for being so easy to work with." ]
                     ]
 
             else
@@ -360,10 +423,10 @@ credits model =
                         ]
                     <|
                         if creditsOn then
-                            Element.text "Hide Credits:"
+                            text "Hide Credits:"
 
                         else
-                            Element.text "Expand Credits:"
+                            text "Expand Credits:"
             , checked = model.showCredits
             , label = Input.labelHidden ""
             }
@@ -376,7 +439,7 @@ credits model =
 
 
 link : String -> String -> Element Msg
-link text url =
+link linkName url =
     Element.newTabLink
         [ width Element.shrink
         , Font.color <| Element.rgb255 0 63 135
@@ -384,8 +447,29 @@ link text url =
         -- , Font.underline
         ]
         { url = url
-        , label = Element.text text
+        , label = text linkName
         }
+
+
+
+-- represents a keyboard character
+
+
+typed : String -> Element Msg
+typed char =
+    Element.el
+        [ Font.family
+            [ Font.typeface "Courier New"
+            , Font.monospace
+            ]
+        , Border.color <| Element.rgb 0 0 0
+        , Border.width 1
+        , Border.rounded 3
+        , Background.color <| Element.rgb255 220 220 220
+        , Element.paddingXY 4 0
+        ]
+    <|
+        Element.text char
 
 
 unselectable : Element.Attribute Msg
@@ -520,13 +604,3 @@ subscriptions _ =
         [ Ports.changedLatex ChangedLatexStr
         , Sub.map KeyMsg Keyboard.subscriptions
         ]
-
-
-
--- keyboardSubscription : Keyboard.RawKey -> Msg
--- keyboardSubscription rawKey =
---     case Keyboard.whitespaceKey rawKey of
---         Just Enter ->
---             Calculate
---         _ ->
---             NoOp
