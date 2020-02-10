@@ -105,36 +105,40 @@ tutorial model =
         , Element.el [ centerX ] <| text "Tutorial & Help Guide"
         , Element.el [ centerX ] <| tutorialToggle model
         , heading 1 "Overview"
-        , heading 2 "Supported Functions"
-        , supportedFunctions
+        , heading 2 "Supported Features"
+        , supportedFeatures
         , heading 3 "Caveats"
         , heading 4 "Keyboard Shortcuts"
         ]
 
 
-supportedFunctions : Element Msg
-supportedFunctions =
+supportedFeatures : Element Msg
+supportedFeatures =
     let
-        supportedFunctionsTable =
-            [ { function = "Four major operations"
+        supportedFeaturesTable =
+            [ { feature = "Four major operations"
               , display = "+ - \\cdot \\frac{a}{b}"
               , typed = "+ - * a/b"
               }
-            , { function = "Exponents"
+            , { feature = "Exponents"
               , display = "a^b"
               , typed = "a^b"
               }
-            , { function = "Six Major Trigonometric Functions"
+            , { feature = "Six Major Trigonometric Functions"
               , display = "sinx \\cdot \\tan (3 \\cdot \\pi x)"
               , typed = "sinx * tan(3\\pix)"
               }
-            , { function = "Square root"
+            , { feature = "Square root"
               , display = "\\sqrt{}"
               , typed = "sqrt"
               }
-            , { function = "Logarithm"
+            , { feature = "Logarithm"
               , display = "\\ln"
               , typed = "ln"
+              }
+            , { feature = "Variables"
+              , display = "a \\cdot a_b \\cdot a_{pple}"
+              , typed = "a * a_b * a_pple"
               }
             ]
     in
@@ -156,9 +160,7 @@ supportedFunctions =
                 ]
             , Element.paragraph
                 [ spacing 4 ]
-                [ text "We support variables, including subscripts. Any alpha character followed by an optional subscript, which you can create by typing in "
-                , typed "_"
-                , text ", will be treated as a constant. This program does not support multivariable calculus or implicit differentiation."
+                [ text "As of right now, this program does not support multivariable calculus or implicit differentiation, though because I treat variables like constants, one can make an argument for simple multivariable calculus."
                 ]
             , Element.paragraph
                 [ spacing 4 ]
@@ -167,23 +169,49 @@ supportedFunctions =
 
             -- make a table
             , Element.table
-                [ spacing 8 ]
-                { data = supportedFunctionsTable
+                [ spacing 8
+                , Element.paddingXY 0 16
+                ]
+                { data = supportedFeaturesTable
                 , columns =
-                    [ { header = Element.el [ Font.bold ] <| Element.text "Function"
+                    [ { header =
+                            Element.el
+                                [ Font.bold
+                                , Font.size 26
+                                ]
+                            <|
+                                Element.text "Function"
                       , width = fill
                       , view =
-                            \f -> Element.el [ centerY ] <| Element.text f.function
+                            \f -> Element.el [ centerY ] <| Element.text f.feature
                       }
-                    , { header = Element.el [ Font.bold ] <| Element.text "Display"
+                    , { header =
+                            Element.el
+                                [ Font.bold
+                                , Font.size 26
+                                ]
+                            <|
+                                Element.text "Display"
                       , width = fill
                       , view =
                             \f -> Element.el [ centerY ] <| staticMath f.display
                       }
-                    , { header = Element.el [ Font.bold ] <| Element.text "How to Type It"
+                    , { header =
+                            Element.el
+                                [ Font.bold
+                                , Font.size 26
+                                ]
+                            <|
+                                Element.text "What to Type"
                       , width = fill
                       , view =
-                            \f -> Element.el [ centerY ] <| typed f.typed
+                            \f ->
+                                Element.el
+                                    [ centerY
+                                    , Font.size 26
+                                    ]
+                                <|
+                                    typed f.typed
                       }
                     ]
                 }
@@ -466,7 +494,8 @@ typed char =
         , Border.width 1
         , Border.rounded 3
         , Background.color <| Element.rgb255 220 220 220
-        , Element.paddingXY 4 0
+        , Element.paddingXY 4 2
+        , Font.size 20
         ]
     <|
         Element.text char
