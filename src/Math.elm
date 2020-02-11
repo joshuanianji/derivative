@@ -4,7 +4,6 @@ module Math exposing (Expr(..), MathError(..), asLatex, derivative, errorToStrin
    Many thanks to http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html
    And the Pratt Parser for existing, you've made my life so much easier
 -}
--- import Parser exposing ((|.), (|=), Parser)
 
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Token(..))
 import Pratt.Advanced as Pratt
