@@ -16,8 +16,6 @@ Special thanks to:
 
 - Benjamin Kovach's [Symbolic Calculus in Haskell](http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html) the blog post which inspired this project
 
-- [Desmos](http://desmos.com), for being such a great graphing calculator.
-
 - [MathQuill](http://mathquill.com/), for making it so easy manage LaTeX input and output.
 
 - [Create Elm App](https://github.com/halfzebra/create-elm-app), with which this project is bootstrapped.
