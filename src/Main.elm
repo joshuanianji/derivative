@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Dict exposing (Dict)
 import Element exposing (Element, centerX, centerY, fill, height, padding, px, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -34,9 +35,9 @@ type alias Model =
     , expr : Result MathError Expr
     , derivative : Result MathError Expr
     , debug : Bool
-    , showCredits : Bool
     , tutorial : Bool
     , pressedKeys : List Key
+    , blocks : Dict String Bool
     }
 
 
@@ -46,9 +47,18 @@ init _ =
       , expr = Math.initExpr
       , derivative = Math.initExpr
       , debug = False
-      , showCredits = False
       , tutorial = True
       , pressedKeys = []
+      , blocks =
+            Dict.fromList
+                [ ( "DerivativeInput", True )
+                , ( "Derivative", True )
+                , ( "Credits", False )
+                , ( "Overview", True )
+                , ( "Supported Features", False )
+                , ( "Caveats", True )
+                , ( "Keyboard Shortcuts", True )
+                ]
       }
     , Cmd.none
     )
@@ -102,13 +112,43 @@ tutorial model =
             , Font.center
             ]
             [ text "Derivative Calculator with Latex" ]
-        , Element.el [ centerX ] <| text "Tutorial & Help Guide"
+
+        -- i NEED to make the Tutorial & Help Guide a paragraph, not an Element.el or else it'll shift it one pixel up lol.
+        , Element.paragraph [ Font.center ] [ text "Tutorial & Help Guide" ]
         , Element.el [ centerX ] <| tutorialToggle model
-        , heading 1 "Overview"
-        , heading 2 "Supported Features"
-        , supportedFeatures
-        , heading 3 "Caveats"
-        , heading 4 "Keyboard Shortcuts"
+        , block model
+            { title = ( 1, "Overview" )
+            , body = overview
+            , toggleMsg = ToggleBlock "Overview"
+            , get = Dict.get "Overview"
+            }
+        , block model
+            { title = ( 2, "Supported Features" )
+            , body = supportedFeatures
+            , toggleMsg = ToggleBlock "Supported Features"
+            , get = Dict.get "Supported Features"
+            }
+        , block model
+            { title = ( 3, "Caveats" )
+            , body = caveats
+            , toggleMsg = ToggleBlock "Caveats"
+            , get = Dict.get "Caveats"
+            }
+        , block model
+            { title = ( 4, "Keyboard Shortcuts" )
+            , body = keyboardShortcuts
+            , toggleMsg = ToggleBlock "Keyboard Shortcuts"
+            , get = Dict.get "Keyboard Shortcuts"
+            }
+        ]
+
+
+overview : Element Msg
+overview =
+    Element.paragraph
+        [ spacing 4 ]
+        [ text "Welcome to my Derivative Calculator! "
+        , text "This project, inspired by a Haskell paper, aims to provide symbolic differentiation with user friendly input and output. Read further to see supported features and caveats, or exit this help guide and get started!"
         ]
 
 
@@ -125,7 +165,7 @@ supportedFeatures =
               , typed = "a^b"
               }
             , { feature = "Six Major Trigonometric Functions"
-              , display = "sinx \\cdot \\tan (3 \\cdot \\pi x)"
+              , display = "sinx \\cdot \\tan (3 \\cdot pi x)"
               , typed = "sinx * tan(3\\pix)"
               }
             , { feature = "Square root"
@@ -141,82 +181,121 @@ supportedFeatures =
               , typed = "a * a_b * a_pple"
               }
             ]
+
+        header str =
+            Element.paragraph
+                [ Font.bold
+                , Font.size 26
+                ]
+                [ Element.text str ]
+
+        viewInTable elem =
+            Element.paragraph [ centerY ] [ elem ]
     in
-    Element.column
+    Element.textColumn
         [ spacing 16
         , width fill
         ]
-        [ Element.textColumn
-            [ spacing 16
-            , width fill
+        [ Element.paragraph
+            [ spacing 4 ]
+            [ text "I used the "
+            , link "MathQuill" "http://mathquill.com/"
+            , text " library, the same one "
+            , link "Desmos" "http://desmos.com"
+            , text " uses for its calculator. Because of this, the latex input is just as intuitive as Desmos!"
             ]
-            [ Element.paragraph
-                [ spacing 4 ]
-                [ text "I used the "
-                , link "MathQuill" "http://mathquill.com/"
-                , text " library, the same one "
-                , link "Desmos" "http://desmos.com"
-                , text " uses for its calculator. Because of this, the latex input is just as intuitive as Desmos!"
-                ]
-            , Element.paragraph
-                [ spacing 4 ]
-                [ text "As of right now, this program does not support multivariable calculus or implicit differentiation, though because I treat variables like constants, one can make an argument for simple multivariable calculus."
-                ]
-            , Element.paragraph
-                [ spacing 4 ]
-                [ text "For a full list of supported functions, refer to the table below."
-                ]
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "As of right now, this program does not support multivariable calculus or implicit differentiation, though because I treat variables like constants, one can make an argument for simple multivariable calculus."
+            ]
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "For a full list of supported functions, refer to the table below."
+            ]
 
-            -- make a table
-            , Element.table
-                [ spacing 8
-                , Element.paddingXY 0 16
-                ]
-                { data = supportedFeaturesTable
-                , columns =
-                    [ { header =
-                            Element.el
-                                [ Font.bold
-                                , Font.size 26
-                                ]
-                            <|
-                                Element.text "Function"
-                      , width = fill
-                      , view =
-                            \f -> Element.el [ centerY ] <| Element.text f.feature
-                      }
-                    , { header =
-                            Element.el
-                                [ Font.bold
-                                , Font.size 26
-                                ]
-                            <|
-                                Element.text "Display"
-                      , width = fill
-                      , view =
-                            \f -> Element.el [ centerY ] <| staticMath f.display
-                      }
-                    , { header =
-                            Element.el
-                                [ Font.bold
-                                , Font.size 26
-                                ]
-                            <|
-                                Element.text "What to Type"
-                      , width = fill
-                      , view =
-                            \f ->
-                                Element.el
-                                    [ centerY
-                                    , Font.size 26
-                                    ]
-                                <|
-                                    typed f.typed
-                      }
-                    ]
-                }
+        -- make a table
+        , Element.table
+            [ spacing 16
+            , Element.paddingXY 0 16
             ]
+            { data = supportedFeaturesTable
+            , columns =
+                [ { header = header "Function"
+                  , width = fill
+                  , view =
+                        \f -> viewInTable <| Element.text f.feature
+                  }
+                , { header = header "Display"
+                  , width = fill
+                  , view =
+                        \f -> viewInTable <| staticMath f.display
+                  }
+                , { header = header "What to Type"
+                  , width = fill
+                  , view =
+                        \f -> viewInTable <| typed f.typed
+                  }
+                ]
+            }
         ]
+
+
+caveats : Element Msg
+caveats =
+    Element.textColumn
+        [ spacing 16 ]
+        [ Element.paragraph
+            [ spacing 4 ]
+            [ text "As cool as this project and its supporting libraries are, there are some limitations and restrictions. [TO BE COMPLETED LATER] " ]
+        ]
+
+
+keyboardShortcuts : Element Msg
+keyboardShortcuts =
+    let
+        shortcutsTable =
+            [ { toggle = "Calculate Derivative"
+              , typed = "ENTER"
+              }
+            , { toggle = "Clear"
+              , typed = "SHIFT + C"
+              }
+            , { toggle = "Toggle Debug"
+              , typed = "SHIFT + D"
+              }
+            , { toggle = "Toggle Tutorial"
+              , typed = "SHIFT + T"
+              }
+            ]
+
+        header str =
+            Element.paragraph
+                [ Font.bold
+                , Font.size 26
+                ]
+                [ Element.text str ]
+
+        viewInTable elem =
+            Element.paragraph [ centerY ] [ elem ]
+    in
+    Element.table
+        [ spacing 16
+        , Element.paddingXY 0 16
+        ]
+        { data = shortcutsTable
+        , columns =
+            [ { header = header "Function"
+              , width = fill
+              , view =
+                    \f -> viewInTable <| Element.text f.toggle
+              }
+            , { header = header "Keyboard"
+              , width = fill
+              , view =
+                    \f -> viewInTable <| typed f.typed
+              }
+            ]
+        }
 
 
 tutorialToggle : Model -> Element Msg
@@ -268,22 +347,43 @@ derivativeView model =
             , link "Joshua Ji" "https://github.com/joshuanianji/Derivative"
             ]
         , Element.el [ centerX ] <| tutorialToggle model
-        , heading 1 "Derivative Input"
-        , input model
-        , if model.debug then
-            latexToExpr model.expr
+        , block model
+            { title = ( 1, "Derivative Input" )
+            , body =
+                Element.column
+                    [ width fill, spacing 8 ]
+                    [ input model
+                    , if model.debug then
+                        latexToExpr model.derivative
 
-          else
-            Element.none
-        , heading 2 "Derivative"
-        , derivative model
-        , if model.debug then
-            latexToExpr model.derivative
+                      else
+                        Element.none
+                    ]
+            , toggleMsg = ToggleBlock "DerivativeInput"
+            , get = Dict.get "DerivativeInput"
+            }
+        , block model
+            { title = ( 2, "Derivative" )
+            , body =
+                Element.column
+                    [ width fill, spacing 8 ]
+                    [ derivative model
+                    , if model.debug then
+                        latexToExpr model.derivative
 
-          else
-            Element.none
+                      else
+                        Element.none
+                    ]
+            , toggleMsg = ToggleBlock "Derivative"
+            , get = Dict.get "Derivative"
+            }
+        , block model
+            { title = ( 3, "Credits" )
+            , body = credits
+            , toggleMsg = ToggleBlock "Credits"
+            , get = Dict.get "Credits"
+            }
         , Element.el [ centerX ] <| debugModeToggle model
-        , credits model
         ]
 
 
@@ -308,23 +408,8 @@ debugModeToggle model =
         , label =
             Input.labelLeft
                 [ unselectable ]
-                (text "Turn debug mode")
+                (text "Debug mode:")
         }
-
-
-heading : Int -> String -> Element Msg
-heading num str =
-    Element.paragraph
-        [ width fill
-        , Font.bold
-        , Font.size 30
-        , Element.paddingXY 0 24
-        ]
-        [ text <| String.fromInt num
-
-        -- use padding to simulate tab
-        , Element.el [ Element.paddingXY 30 0 ] <| text str
-        ]
 
 
 input : Model -> Element Msg
@@ -403,7 +488,7 @@ derivative model =
                 |> Element.paragraph [ Font.center ]
     )
         |> Element.el
-            [ centerX
+            [ Font.center
             , Element.scrollbarX
             , width fill
             ]
@@ -414,56 +499,80 @@ derivative model =
             ]
 
 
-credits : Model -> Element Msg
-credits model =
-    let
-        mainCreditColumn =
-            if model.showCredits then
-                Element.column
-                    [ spacing 16
-                    , Element.paddingXY 16 0
-                    , Element.scrollbarX
-                    , width fill
-                    ]
-                    [ text "Special thanks to:"
-                    , Element.paragraph [] [ link "Desmos" "http://desmos.com", text ", for being such a great graphing calculator." ]
-                    , Element.paragraph [] [ link "MathQuill" "http://mathquill.com/", text ", for making it so easy manage LaTeX input and output." ]
-                    , Element.paragraph [] [ link "Create Elm App" "https://github.com/halfzebra/create-elm-app", text " with which this project is bootstrapped." ]
-                    , Element.paragraph [] [ link "Dmy" "https://github.com/dmy", text ", for creating the beautiful ", link "Elm Pratt Parser" "https://github.com/dmy/elm-pratt-parser." ]
-                    , Element.paragraph [] [ link "The Elm Language" "https://elm-lang.org/", text " for being so easy to work with." ]
-                    ]
-
-            else
-                Element.none
-    in
+credits : Element Msg
+credits =
     Element.column
-        [ spacing 32 ]
-        [ Input.checkbox
-            []
-            { onChange = ToggleCredits
-            , icon =
-                \creditsOn ->
-                    Element.el
-                        [ Font.bold
-                        , Element.centerY
-                        , Element.alignLeft
-                        , unselectable
-                        ]
-                    <|
-                        if creditsOn then
-                            text "Hide Credits:"
-
-                        else
-                            text "Expand Credits:"
-            , checked = model.showCredits
-            , label = Input.labelHidden ""
-            }
-        , mainCreditColumn
+        [ spacing 16
+        , width fill
+        ]
+        [ text "Special thanks to:"
+        , Element.paragraph [] [ text "Benjamin Kovach, for writing ", link "Symbolic Calculus in Haskell" "http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html", text ", the blog post which inspired this project." ]
+        , Element.paragraph [] [ link "MathQuill" "http://mathquill.com/", text ", for making it so easy manage LaTeX input and output." ]
+        , Element.paragraph [] [ link "Create Elm App" "https://github.com/halfzebra/create-elm-app", text " with which this project is bootstrapped." ]
+        , Element.paragraph [] [ link "Dmy" "https://github.com/dmy", text ", for creating ", link "Elm Pratt Parser" "https://github.com/dmy/elm-pratt-parser.", text ", an awesome library which implements the theoretical parser of the same name in Elm." ]
+        , Element.paragraph [] [ link "The Elm Language" "https://elm-lang.org/", text " for being so easy to work with." ]
         ]
 
 
 
 -- HELPER FUNCTIONS
+
+
+type alias BlockData =
+    { title : ( Int, String )
+    , body : Element Msg
+    , toggleMsg : Msg
+    , get : Dict String Bool -> Maybe Bool
+    }
+
+
+block : Model -> BlockData -> Element Msg
+block model blockData =
+    let
+        isOpen =
+            Maybe.withDefault False (blockData.get model.blocks)
+
+        heading =
+            Element.row
+                [ width fill
+                , Font.bold
+                , Font.size 30
+                , Element.paddingXY 0 24
+                , if isOpen then
+                    -- black font
+                    Font.color <| Element.rgb 0 0 0
+
+                  else
+                    -- gray font
+                    Font.color <| Element.rgb255 169 169 169
+                , Element.pointer
+                , Events.onClick blockData.toggleMsg
+                , unselectable
+                ]
+                [ Tuple.first blockData.title
+                    |> String.fromInt
+                    |> text
+                    |> List.singleton
+                    |> Element.paragraph [ width (px 30) ]
+                , Element.paragraph [ Element.paddingXY 16 0 ]
+                    [ text <| Tuple.second blockData.title ]
+                ]
+    in
+    Element.column
+        [ spacing 8
+        , width fill
+        ]
+        [ heading
+        , if isOpen then
+            blockData.body
+                |> Element.el
+                    [ Element.paddingXY 46 0
+                    , width fill
+                    ]
+
+          else
+            Element.none
+        ]
 
 
 link : String -> String -> Element Msg
@@ -506,6 +615,10 @@ unselectable =
     Element.htmlAttribute (Html.Attributes.style "user-select" "none")
 
 
+
+-- web component stuff
+
+
 functionInput : Model -> Element Msg
 functionInput _ =
     Html.div []
@@ -525,10 +638,6 @@ functionInput _ =
         |> Element.el [ Element.scrollbarX ]
 
 
-
--- Mathquill static math using Web Components
-
-
 staticMath : String -> Element Msg
 staticMath latexStr =
     Html.node "mathquill-static"
@@ -545,8 +654,8 @@ staticMath latexStr =
 
 type Msg
     = ToggleDebug Bool
-    | ToggleCredits Bool
     | ToggleTutorial
+    | ToggleBlock String -- because I use a string dictionary lel
     | ChangedLatexStr String
     | Calculate
     | Clear
@@ -559,11 +668,21 @@ update msg model =
         ToggleDebug currentDebugMode ->
             ( { model | debug = currentDebugMode }, Cmd.none )
 
-        ToggleCredits currentCreditMode ->
-            ( { model | showCredits = currentCreditMode }, Cmd.none )
-
         ToggleTutorial ->
             ( { model | tutorial = not model.tutorial }, Cmd.none )
+
+        ToggleBlock blockSelect ->
+            let
+                blocks =
+                    model.blocks
+
+                newBlocks =
+                    Dict.update
+                        blockSelect
+                        (Maybe.map not)
+                        blocks
+            in
+            ( { model | blocks = newBlocks }, Cmd.none )
 
         ChangedLatexStr latexStr ->
             ( { model
