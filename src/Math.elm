@@ -352,6 +352,9 @@ simplify expr1 =
                 Ok <| Sub (Var a) (Var b)
 
         -- Multiplication
+        Mult (Negative a) (Negative b) ->
+            Result.map2 Mult (simplify a) (simplify b)
+
         Mult (Const a) (Mult (Const b) expr) ->
             Result.map2 Mult (Ok <| Const <| a * b) (simplify expr)
 
@@ -602,8 +605,8 @@ asLatex expr =
         Sub a b ->
             asLatex a ++ "-" ++ asLatex b
 
-        Mult (Const a) (Const b) ->
-            String.fromFloat a ++ "\\cdot" ++ String.fromFloat b
+        Mult (Const a) (Negative b) ->
+            "-" ++ String.fromFloat a ++ "\\cdot" ++ asLatex b
 
         Mult (Const a) b ->
             if a == -1 then
@@ -770,6 +773,7 @@ shouldHaveParentheses parent child =
 
                 Negative a ->
                     precedenceLevel a
+                        |> Maybe.map (\x -> x + 2)
 
                 -- disregard unary operations
                 _ ->
@@ -915,16 +919,16 @@ expression =
         Pratt.expression
             { oneOf =
                 [ negationCheck
-                , Pratt.prefix 2 cosine Cos
-                , Pratt.prefix 2 sine Sin
-                , Pratt.prefix 2 cosecant Csc
-                , Pratt.prefix 2 secant Sec
-                , Pratt.prefix 2 tangent Tan
-                , Pratt.prefix 2 cotangent Cot
-                , Pratt.prefix 2 natLog Ln
                 , sqrt
                 , division
                 , parentheses
+                , Pratt.prefix 5 cosine Cos
+                , Pratt.prefix 5 sine Sin
+                , Pratt.prefix 5 cosecant Csc
+                , Pratt.prefix 5 secant Sec
+                , Pratt.prefix 5 tangent Tan
+                , Pratt.prefix 5 cotangent Cot
+                , Pratt.prefix 5 natLog Ln
                 , Pratt.literal variable
                 , Pratt.literal constant
 
@@ -937,11 +941,11 @@ expression =
             , andThenOneOf =
                 [ Pratt.infixLeft 1 (Parser.symbol (Token "+" (ExpectingOperation "+"))) Add
                 , Pratt.infixLeft 1 (Parser.symbol (Token "-" (ExpectingOperation "-"))) Sub
-                , Pratt.infixLeft 3 (Parser.symbol (Token "\\cdot" (ExpectingOperation "\\cdot"))) Mult
-                , Pratt.infixRight 5 (Parser.symbol (Token "^" (ExpectingOperation "^"))) Pow
+                , Pratt.infixLeft 2 (Parser.symbol (Token "\\cdot" (ExpectingOperation "\\cdot"))) Mult
 
                 -- allows parsing of expressions like 3x
-                , Pratt.infixLeft 3 (Parser.symbol (Token "" ExpectingNoSpace)) Mult
+                , Pratt.infixLeft 2 (Parser.symbol (Token "" ExpectingNoSpace)) Mult
+                , Pratt.infixRight 4 (Parser.symbol (Token "^" (ExpectingOperation "^"))) Pow
                 ]
             , spaces = Parser.spaces
             }
@@ -1098,11 +1102,10 @@ variable =
 
 
 -- Custom parser to only parser numbers!!
--- the elm Parser.number also parses "e" as the exponent which messes things suck as 3e^{5x} up a lot, and it's annoying/
--- Good thing we have Functional Programming, and good thing the Elm Parser is so flexible!
+-- the elm Parser.number also parses "e" as the exponent which messes things such as 3e^{5x} up a lot, and it's annoying
+-- Good thing the Elm Parser is so flexible!
 
 
-constant : MyParser Expr
 constant =
     Parser.getChompedString (Parser.chompWhile (\c -> Char.isDigit c || c == '.'))
         |> Parser.map String.toFloat
