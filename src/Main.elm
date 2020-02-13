@@ -47,7 +47,7 @@ init _ =
       , expr = Math.initExpr
       , derivative = Math.initExpr
       , debug = False
-      , tutorial = True
+      , tutorial = False
       , pressedKeys = []
       , blocks =
             Dict.fromList
@@ -56,8 +56,8 @@ init _ =
                 , ( "Credits", False )
                 , ( "Overview", True )
                 , ( "Supported Features", False )
-                , ( "Caveats", True )
-                , ( "Keyboard Shortcuts", True )
+                , ( "Caveats", False )
+                , ( "Keyboard Shortcuts", False )
                 ]
       }
     , Cmd.none
@@ -204,7 +204,7 @@ supportedFeatures =
             , link "MathQuill" "http://mathquill.com/"
             , text " library, the same one "
             , link "Desmos" "http://desmos.com"
-            , text " uses for its calculator. Because of this, the latex input is just as intuitive as Desmos!"
+            , text " uses for its calculator. Because of this, the latex input is pretty intuitive!"
             ]
         , Element.paragraph
             [ spacing 4 ]
@@ -275,15 +275,7 @@ caveats =
             , staticMath 18 "sin^3 x"
             , text ", but my parser is too stupid to understand that kind of expression! To write exponentials of trigonometric functions, and any unary function, it is highly advised to use parentheses, like "
             , staticMath 18 "(sin x)^3"
-            , text "."
-            ]
-        , Element.paragraph
-            [ spacing 4 ]
-            [ text "Another caveat with my parser is the fact that it fails to associate most expressions with its trigonometric function counterpart unless provided with parentheses. One example is "
-            , staticMath 18 "sin 3x"
-            , text ", which my parser would think of as "
-            , staticMath 18 "(sin3 \\cdot x)"
-            , text ". This is due to the precedence levels I set for the functions. Maybe I should tinker with those numbers some more, but honestly I don't want to."
+            , text ". (Rip latex formatting)"
             ]
         , subHeading "Simplification"
         , Element.paragraph
@@ -304,6 +296,22 @@ caveats =
             [ spacing 4 ]
             [ text "Looking at the debug tool, one notices that the variables and constants that could be joined together are in different branches of the data type. "
             , text "I have no doubt that there is a way to combine these together using a clever algorithm, but I'm not educated enough to fix this haha. Maybe I'll learn it one day."
+            ]
+        , subHeading "Miscellaneous"
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "This one bug drives me nuts and it's the fact that my parser parses "
+            , staticMath 18 "sin 3"
+            , text " and any unary function where it's followed immediately by a constant as a variable multiplied by a constant! It would read the input as "
+            , text "(Mult (Var \"\\sin\") (Const 3)), "
+            , text "like what the heck?? And replacing the constant with a variable is fine. I have honestly no idea how to fix this but to be honest I won't waste energy on it it since it fixes itself with parentheses and this bug won't affect the end user too much...I think."
+            ]
+        , subHeading "More bugs?"
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "If you find anything out of the ordinary, open a new issue on "
+            , link "The Github Repository" "https://github.com/joshuanianji/Derivative"
+            , text " or open a pull request! I am open to suggestions on my code or anything else about this project."
             ]
         ]
 
