@@ -1106,6 +1106,7 @@ variable =
 -- Good thing the Elm Parser is so flexible!
 
 
+constant : MyParser Expr
 constant =
     Parser.getChompedString (Parser.chompWhile (\c -> Char.isDigit c || c == '.'))
         |> Parser.map String.toFloat
