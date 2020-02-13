@@ -70,17 +70,36 @@ init _ =
 
 view : Model -> Html Msg
 view model =
-    (if model.tutorial then
-        tutorial model
-
-     else
-        derivativeView model
-    )
-        |> Element.el
-            [ width fill
-            , height fill
-            , Element.paddingXY 50 70
+    Element.column
+        [ width fill
+        , height fill
+        , Element.paddingXY 50 70
+        , Element.spacing 32
+        ]
+        [ -- header
+          Element.paragraph
+            [ Font.size 32
+            , Font.center
             ]
+            [ text "Symbolic Differentiation Calculator" ]
+
+        -- main content
+        , if model.tutorial then
+            tutorial model
+
+          else
+            derivativeView model
+
+        -- footer
+        , Element.paragraph
+            [ width fill
+            , Font.center
+            ]
+            [ text "All source code is available on "
+            , link "Github" "https://github.com/joshuanianji/Derivative"
+            , text "!"
+            ]
+        ]
         -- surrounds with borders
         |> (\el ->
                 Element.row
@@ -107,14 +126,8 @@ tutorial model =
         , width fill
         , height fill
         ]
-        [ Element.paragraph
-            [ Font.size 32
-            , Font.center
-            ]
-            [ text "Symbolic Differentiation Calculator" ]
-
-        -- i NEED to make the Info & Help Guide a paragraph, not an Element.el or else it'll shift it one pixel up lol.
-        , Element.paragraph [ Font.center ] [ text "Info & Help Guide" ]
+        [ -- i NEED to make the Info & Help Guide a paragraph, not an Element.el or else it'll shift it one pixel up lol.
+          Element.paragraph [ Font.center ] [ text "Info & Help Guide" ]
         , Element.el [ centerX ] <| tutorialToggle model
         , block model
             { title = ( 1, "Overview" )
@@ -304,7 +317,7 @@ caveats =
             , staticMath 18 "sin 3"
             , text " and any unary function where it's followed immediately by a constant as a variable multiplied by a constant! It would read the input as "
             , text "(Mult (Var \"\\sin\") (Const 3)), "
-            , text "like what the heck?? And replacing the constant with a variable is fine. I have honestly no idea how to fix this but to be honest I won't waste energy on it it since it fixes itself with parentheses and this bug won't affect the end user too much...I think."
+            , text "like what the heck?? And replacing the constant with a variable is fine. I have honestly no idea how to fix this but to be honest I won't waste energy on it, as it fixes itself with parentheses and this bug won't affect the end user too much...I think."
             ]
         , subHeading "More bugs?"
         , Element.paragraph
@@ -401,11 +414,6 @@ derivativeView model =
         , height fill
         ]
         [ Element.paragraph
-            [ Font.size 32
-            , Font.center
-            ]
-            [ text "Symbolic Differentiation Calculator" ]
-        , Element.paragraph
             [ width fill
             , Font.center
             ]
