@@ -230,7 +230,7 @@ supportedFeatures =
                 , { header = header "Display"
                   , width = fill
                   , view =
-                        \f -> viewInTable <| staticMath f.display
+                        \f -> viewInTable <| staticMath 20 f.display
                   }
                 , { header = header "What to Type"
                   , width = fill
@@ -244,12 +244,67 @@ supportedFeatures =
 
 caveats : Element Msg
 caveats =
+    let
+        -- for padding
+        edges =
+            { top = 0
+            , right = 0
+            , bottom = 0
+            , left = 0
+            }
+
+        subHeading str =
+            Element.paragraph
+                [ Font.size 24
+                , Element.paddingEach { edges | top = 16 }
+                , Font.bold
+                ]
+                [ text str ]
+    in
     Element.textColumn
-        [ spacing 16 ]
+        [ spacing 16
+        , width fill
+        ]
         [ Element.paragraph
             [ spacing 4 ]
             [ text "As cool as this project and its supporting libraries are, there are some limitations and restrictions." ]
-        , Element.
+        , subHeading "Trigonometric Functions"
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "It is common to write exponentials for trigonometric functions like "
+            , staticMath 18 "sin^3 x"
+            , text ", but my parser is too stupid to understand that kind of expression! To write exponentials of trigonometric functions, and any unary function, it is highly advised to use parentheses, like "
+            , staticMath 18 "(sin x)^3"
+            , text "."
+            ]
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "Another caveat with my parser is the fact that it fails to associate most expressions with its trigonometric function counterpart unless provided with parentheses. One example is "
+            , staticMath 18 "sin 3x"
+            , text ", which my parser would think of as "
+            , staticMath 18 "(sin3 \\cdot x)"
+            , text ". This is due to the precedence levels I set for the functions. Maybe I should tinker with those numbers some more, but honestly I don't want to."
+            ]
+        , subHeading "Simplification"
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "TL;DR: my simplification algorithm sucks." ]
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text " Looking at my source code, the function for simplifying an expression takes the crown for the longest function definition - by a long shot. It's a good thing the Elm compiler does a good job at pointing out redundant case statements to me. "
+            , text "Still, simplification is difficult and feels wonky due to the nature of my data type being a tree structure. (If you want to take a look at what the data type is for a certain expression, open the debug tool). "
+            , text "An easy example is calculating the derivative of "
+            , staticMath 18 "(x+1)(x-4)"
+            , text ", which trivially turns out to "
+            , staticMath 18 "2x-3,"
+            , text ", yet my algorithm, using the product rule, stops at "
+            , staticMath 18 "x-4+x+1."
+            ]
+        , Element.paragraph
+            [ spacing 4 ]
+            [ text "Looking at the debug tool, one notices that the variables and constants that could be joined together are in different branches of the data type. "
+            , text "I have no doubt that there is a way to combine these together using a clever algorithm, but I'm not educated enough to fix this haha. Maybe I'll learn it one day."
+            ]
         ]
 
 
@@ -482,7 +537,7 @@ derivative model =
         Ok der ->
             Math.asLatex der
                 |> (\s -> "\\frac{df}{dx}=" ++ s)
-                |> staticMath
+                |> staticMath 20
 
         Err mathError ->
             Math.errorToString mathError
@@ -641,11 +696,13 @@ functionInput _ =
         |> Element.el [ Element.scrollbarX ]
 
 
-staticMath : String -> Element Msg
-staticMath latexStr =
+staticMath : Int -> String -> Element Msg
+staticMath fontSize latexStr =
     Html.node "mathquill-static"
         [ Html.Attributes.property "latexValue" <|
             Json.Encode.string latexStr
+        , Html.Attributes.property "style"
+            (Json.Encode.string <| ("font-size: " ++ String.fromInt fontSize ++ "px; vertical-align: text-bottom"))
         ]
         []
         |> Element.html
