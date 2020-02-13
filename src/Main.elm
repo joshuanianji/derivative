@@ -51,7 +51,7 @@ init _ =
       , pressedKeys = []
       , blocks =
             Dict.fromList
-                [ ( "DerivativeInput", True )
+                [ ( "FunctionInput", True )
                 , ( "Derivative", True )
                 , ( "Credits", False )
                 , ( "Overview", True )
@@ -111,10 +111,10 @@ tutorial model =
             [ Font.size 32
             , Font.center
             ]
-            [ text "Derivative Calculator with Latex" ]
+            [ text "Symbolic Differentiation Calculator" ]
 
-        -- i NEED to make the Tutorial & Help Guide a paragraph, not an Element.el or else it'll shift it one pixel up lol.
-        , Element.paragraph [ Font.center ] [ text "Tutorial & Help Guide" ]
+        -- i NEED to make the Info & Help Guide a paragraph, not an Element.el or else it'll shift it one pixel up lol.
+        , Element.paragraph [ Font.center ] [ text "Info & Help Guide" ]
         , Element.el [ centerX ] <| tutorialToggle model
         , block model
             { title = ( 1, "Overview" )
@@ -148,7 +148,9 @@ overview =
     Element.paragraph
         [ spacing 4 ]
         [ text "Welcome to my Derivative Calculator! "
-        , text "This project, inspired by a Haskell paper, aims to provide symbolic differentiation with user friendly input and output. Read further to see supported features and caveats, or exit this help guide and get started!"
+        , text "This project, inspired by "
+        , link "this Haskell blog post" "http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html"
+        , text ", aims to provide symbolic differentiation with user friendly input and output. Read further to see supported features and caveats, or exit this help guide and get started!"
         ]
 
 
@@ -156,7 +158,7 @@ supportedFeatures : Element Msg
 supportedFeatures =
     let
         supportedFeaturesTable =
-            [ { feature = "Four major operations"
+            [ { feature = "Four Basic Operations"
               , display = "+ - \\cdot \\frac{a}{b}"
               , typed = "+ - * a/b"
               }
@@ -165,10 +167,10 @@ supportedFeatures =
               , typed = "a^b"
               }
             , { feature = "Six Major Trigonometric Functions"
-              , display = "sinx \\cdot \\tan (3 \\cdot pi x)"
-              , typed = "sinx * tan(3\\pix)"
+              , display = "sinx \\cdot \\tan (3 \\cdot \\pi x)"
+              , typed = "sinx * tan(3 * pi x)"
               }
-            , { feature = "Square root"
+            , { feature = "Square Root"
               , display = "\\sqrt{}"
               , typed = "sqrt"
               }
@@ -206,7 +208,7 @@ supportedFeatures =
             ]
         , Element.paragraph
             [ spacing 4 ]
-            [ text "As of right now, this program does not support multivariable calculus or implicit differentiation, though because I treat variables like constants, one can make an argument for simple multivariable calculus."
+            [ text "As of right now, this program does not support multivariable calculus or implicit differentiation, though because I treat variables like constants, one can make an argument for partial derivatives."
             ]
         , Element.paragraph
             [ spacing 4 ]
@@ -246,7 +248,8 @@ caveats =
         [ spacing 16 ]
         [ Element.paragraph
             [ spacing 4 ]
-            [ text "As cool as this project and its supporting libraries are, there are some limitations and restrictions. [TO BE COMPLETED LATER] " ]
+            [ text "As cool as this project and its supporting libraries are, there are some limitations and restrictions." ]
+        , Element.
         ]
 
 
@@ -338,7 +341,7 @@ derivativeView model =
             [ Font.size 32
             , Font.center
             ]
-            [ text "Derivative Calculator with Latex" ]
+            [ text "Symbolic Differentiation Calculator" ]
         , Element.paragraph
             [ width fill
             , Font.center
@@ -348,19 +351,19 @@ derivativeView model =
             ]
         , Element.el [ centerX ] <| tutorialToggle model
         , block model
-            { title = ( 1, "Derivative Input" )
+            { title = ( 1, "Function Input" )
             , body =
                 Element.column
                     [ width fill, spacing 8 ]
                     [ input model
                     , if model.debug then
-                        latexToExpr model.derivative
+                        latexToExpr model.expr
 
                       else
                         Element.none
                     ]
-            , toggleMsg = ToggleBlock "DerivativeInput"
-            , get = Dict.get "DerivativeInput"
+            , toggleMsg = ToggleBlock "FunctionInput"
+            , get = Dict.get "FunctionInput"
             }
         , block model
             { title = ( 2, "Derivative" )
@@ -460,7 +463,7 @@ latexToExpr resultExpr =
             Ok expr ->
                 Element.paragraph
                     [ Font.center ]
-                    [ text <| Debug.toString expr ]
+                    [ text <| Math.toString expr ]
 
             Err error ->
                 Math.errorToString error
