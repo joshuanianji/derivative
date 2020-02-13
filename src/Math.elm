@@ -1,4 +1,14 @@
-module Math exposing (Expr(..), MathError(..), asLatex, derivative, errorToString, fromLatex, fullSimplify, initExpr)
+module Math exposing
+    ( Expr(..)
+    , MathError(..)
+    , asLatex
+    , derivative
+    , errorToString
+    , fromLatex
+    , fullSimplify
+    , initExpr
+    , toString
+    )
 
 {- Module for parsing and dealing with the Math stuff
    Many thanks to http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html
@@ -72,6 +82,58 @@ type MathError
 negate : Expr -> Expr
 negate =
     Negative
+
+
+toString : Expr -> String
+toString expr =
+    case expr of
+        Const a ->
+            "(Const " ++ String.fromFloat a ++ ")"
+
+        Var str ->
+            "(Var \"" ++ str ++ "\")"
+
+        Add a b ->
+            "(Add " ++ toString a ++ " " ++ toString b ++ ")"
+
+        Sub a b ->
+            "(Sub " ++ toString a ++ " " ++ toString b ++ ")"
+
+        Mult a b ->
+            "(Mult " ++ toString a ++ " " ++ toString b ++ ")"
+
+        Div a b ->
+            "(Div " ++ toString a ++ " " ++ toString b ++ ")"
+
+        Pow a b ->
+            "(Pow " ++ toString a ++ " " ++ toString b ++ ")"
+
+        Sin a ->
+            "(Sin " ++ toString a ++ ")"
+
+        Csc a ->
+            "(Csc " ++ toString a ++ ")"
+
+        Cos a ->
+            "(Cos " ++ toString a ++ ")"
+
+        Sec a ->
+            "(Sec " ++ toString a ++ ")"
+
+        Tan a ->
+            "(Tan " ++ toString a ++ ")"
+
+        Cot a ->
+            "(Cot " ++ toString a ++ ")"
+
+        Ln a ->
+            "(Ln " ++ toString a ++ ")"
+
+        Sqrt f ->
+            "(Sqrt " ++ toString f ++ ")"
+
+        Negative f ->
+            "(Negative " ++ toString f ++ ")"
 
 
 
