@@ -22,6 +22,6 @@ Special thanks to:
 
 - [Create Elm App](https://github.com/halfzebra/create-elm-app), with which this project is bootstrapped.
 
-- [Dmy](https://github.com/dmy) for creating the beautiful [Elm Pratt Parser](https://github.com/dmy/elm-pratt-parser) - this project wouldn't be possible without this package.
+- The [Elm Pratt Parser](https://github.com/dmy/elm-pratt-parser) library - this project wouldn't be possible without this package.
 
 - [The Elm Language](https://elm-lang.org/), for being so easy to work with.
