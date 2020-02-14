@@ -51,9 +51,7 @@ init _ =
       , pressedKeys = []
       , blocks =
             Dict.fromList
-                [ ( "FunctionInput", True )
-                , ( "Derivative", True )
-                , ( "Credits", False )
+                [ ( "Credits", False )
                 , ( "Overview", True )
                 , ( "Supported Features", False )
                 , ( "Caveats", False )
@@ -421,36 +419,26 @@ derivativeView model =
             , link "Joshua Ji" "https://github.com/joshuanianji/Derivative"
             ]
         , Element.el [ centerX ] <| tutorialToggle model
-        , block model
-            { title = ( 1, "Function Input" )
-            , body =
-                Element.column
-                    [ width fill, spacing 8 ]
-                    [ input model
-                    , if model.debug then
-                        latexToExpr model.expr
+        , heading ( 1, "Function Input" )
+        , Element.column
+            [ width fill, spacing 8 ]
+            [ input model
+            , if model.debug then
+                latexToExpr model.expr
 
-                      else
-                        Element.none
-                    ]
-            , toggleMsg = ToggleBlock "FunctionInput"
-            , get = Dict.get "FunctionInput"
-            }
-        , block model
-            { title = ( 2, "Derivative" )
-            , body =
-                Element.column
-                    [ width fill, spacing 8 ]
-                    [ derivative model
-                    , if model.debug then
-                        latexToExpr model.derivative
+              else
+                Element.none
+            ]
+        , heading ( 2, "Derivative" )
+        , Element.column
+            [ width fill, spacing 8 ]
+            [ derivative model
+            , if model.debug then
+                latexToExpr model.derivative
 
-                      else
-                        Element.none
-                    ]
-            , toggleMsg = ToggleBlock "Derivative"
-            , get = Dict.get "Derivative"
-            }
+              else
+                Element.none
+            ]
         , block model
             { title = ( 3, "Credits" )
             , body = credits
@@ -605,14 +593,14 @@ block model blockData =
     let
         isOpen =
             Maybe.withDefault False (blockData.get model.blocks)
-
-        heading =
-            Element.row
-                [ width fill
-                , Font.bold
-                , Font.size 30
-                , Element.paddingXY 0 24
-                , if isOpen then
+    in
+    Element.column
+        [ spacing 8
+        , width fill
+        ]
+        [ heading blockData.title
+            |> Element.el
+                [ if isOpen then
                     -- black font
                     Font.color <| Element.rgb 0 0 0
 
@@ -623,20 +611,6 @@ block model blockData =
                 , Events.onClick blockData.toggleMsg
                 , unselectable
                 ]
-                [ Tuple.first blockData.title
-                    |> String.fromInt
-                    |> text
-                    |> List.singleton
-                    |> Element.paragraph [ width (px 30) ]
-                , Element.paragraph [ Element.paddingXY 16 0 ]
-                    [ text <| Tuple.second blockData.title ]
-                ]
-    in
-    Element.column
-        [ spacing 8
-        , width fill
-        ]
-        [ heading
         , if isOpen then
             blockData.body
                 |> Element.el
@@ -646,6 +620,23 @@ block model blockData =
 
           else
             Element.none
+        ]
+
+
+heading : ( Int, String ) -> Element Msg
+heading ( num, title ) =
+    Element.row
+        [ width fill
+        , Font.bold
+        , Font.size 30
+        , Element.paddingXY 0 24
+        ]
+        [ String.fromInt num
+            |> text
+            |> List.singleton
+            |> Element.paragraph [ width (px 30) ]
+        , Element.paragraph [ Element.paddingXY 16 0 ]
+            [ text <| title ]
         ]
 
 
