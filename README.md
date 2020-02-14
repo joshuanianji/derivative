@@ -1,8 +1,6 @@
 # Differentials
 
-Man I hope this doesn't become deprecated lmao.
-
-Anyway this is supposed to be some sort of outlet for symbolic differentiation, with the use of MathQuill, the same thing [Desmos](http://desmos.com) uses.
+This project, inspired by [this Haskell blog post](http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html) aims to provide symbolic differentiation along with user friendly input and output, via [MathQuill](http://mathquill.com/). 
 
 ## Run
 
