@@ -462,10 +462,10 @@ debugModeToggle model =
                     ]
                 <|
                     if debugOn then
-                        text "Off"
+                        text "On"
 
                     else
-                        text "On"
+                        text "Off"
         , checked = model.debug
         , label =
             Input.labelLeft
