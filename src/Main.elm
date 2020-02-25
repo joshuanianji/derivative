@@ -571,7 +571,7 @@ credits =
         , Element.paragraph [] [ text "Benjamin Kovach, for writing ", link "Symbolic Calculus in Haskell" "http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html", text ", the blog post which inspired this project." ]
         , Element.paragraph [] [ link "MathQuill" "http://mathquill.com/", text ", for making it so easy manage LaTeX input and output." ]
         , Element.paragraph [] [ link "Create Elm App" "https://github.com/halfzebra/create-elm-app", text " with which this project is bootstrapped." ]
-        , Element.paragraph [] [ link "Dmy" "https://github.com/dmy", text ", for creating ", link "Elm Pratt Parser" "https://github.com/dmy/elm-pratt-parser.", text ", an awesome library which implements the theoretical parser of the same name in Elm." ]
+        , Element.paragraph [] [ link "Dmy" "https://github.com/dmy", text ", for creating ", link "Elm Pratt Parser" "https://github.com/dmy/elm-pratt-parser", text ", an awesome library which implements the theoretical parser of the same name in Elm." ]
         , Element.paragraph [] [ link "The Elm Language" "https://elm-lang.org/", text " for being so easy to work with." ]
         ]
 
