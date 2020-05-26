@@ -1,4 +1,4 @@
-# Differentials
+# Symbolic Derivatives
 
 This project, inspired by [this Haskell blog post](http://5outh.blogspot.com/2013/05/symbolic-calculus-in-haskell.html) aims to provide symbolic differentiation along with user friendly input and output, via [MathQuill](http://mathquill.com/). 
 
