@@ -8,6 +8,7 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import GithubLogo
 import Html exposing (Html)
 import Html.Attributes
 import Json.Encode
@@ -110,6 +111,12 @@ view model =
         |> Element.layout
             [ Font.family
                 [ Font.typeface "Computer Modern" ]
+            , Element.inFront <|
+                Element.el
+                    [ Element.alignTop
+                    , Element.alignRight
+                    ]
+                    GithubLogo.view
             ]
 
 
@@ -573,7 +580,6 @@ credits =
         , Element.paragraph [] [ link "Create Elm App" "https://github.com/halfzebra/create-elm-app", text " with which this project is bootstrapped." ]
         , Element.paragraph [] [ link "Dmy" "https://github.com/dmy", text ", for creating ", link "Elm Pratt Parser" "https://github.com/dmy/elm-pratt-parser", text ", an awesome library which implements the theoretical parser of the same name in Elm." ]
         , Element.paragraph [] [ link "The Elm Language" "https://elm-lang.org/", text " for being so easy to work with." ]
-        , Element.paragraph [] [ text "Last but not least Joshua Ji for being a chad and making such a nice web app" ]
         ]
 
 
