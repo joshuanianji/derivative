@@ -1,0 +1,26 @@
+{
+  "name": "derivative",
+  "version": "1.0.0",
+  "description": "Symbolic Differentiation with Elm",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "elm-app start",
+    "build": "elm-app build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joshuanianji/Derivative.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joshuanianji/Derivative/issues"
+  },
+  "homepage": "https://github.com/joshuanianji/Derivative#readme",
+  "devDependencies": {
+    "create-elm-app": "^5.22.0"
+  }
+}
