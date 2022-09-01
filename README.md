@@ -4,7 +4,7 @@ This project, inspired by [this Haskell blog post](http://5outh.blogspot.com/201
 
 ## Demo
 
-https://joshuaji.com/projects/derivative/
+[https://joshuaji.com/derivative](https://joshuaji.com/derivative)
 
 ## Run
 
