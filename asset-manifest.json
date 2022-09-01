@@ -1,0 +1,17 @@
+{
+  "main.css": "/derivative/static/css/main.f02eab21.chunk.css",
+  "main.js": "/derivative/static/js/main.5a0016c5.chunk.js",
+  "main.js.map": "/derivative/static/js/main.5a0016c5.chunk.js.map",
+  "runtime~main.js": "/derivative/static/js/runtime~main.1833c6df.js",
+  "runtime~main.js.map": "/derivative/static/js/runtime~main.1833c6df.js.map",
+  "vendors~main.js": "/derivative/static/js/vendors~main.354e092f.chunk.js",
+  "vendors~main.js.map": "/derivative/static/js/vendors~main.354e092f.chunk.js.map",
+  "./service-worker.js": "/derivative/./service-worker.js",
+  "favicon.ico": "/derivative/favicon.ico",
+  "icon.png": "/derivative/icon.png",
+  "index.html": "/derivative/index.html",
+  "logo.svg": "/derivative/logo.svg",
+  "manifest.json": "/derivative/manifest.json",
+  "precache-manifest.30e8b676797b1ebe087133af83fc12ce.js": "/derivative/precache-manifest.30e8b676797b1ebe087133af83fc12ce.js",
+  "static/media/main.css": "/derivative/static/media/cmunrm.bf7ccd25.ttf"
+}
