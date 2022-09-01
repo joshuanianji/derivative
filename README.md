@@ -8,9 +8,12 @@ https://joshuaji.com/projects/derivative/
 
 ## Run
 
-This is created using create-elm-app: make sure you have Node, elm and that installed on your computer.
+Make sure you have `Elm` and `Node` installed (at least v14). 
 
-Run `elm-app start` to run the development server.
+```bash
+npm i
+npm run start
+```
 
 ## Credit
 
